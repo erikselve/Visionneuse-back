@@ -15,7 +15,7 @@ exports.upload = async (req, res) => {
         const miniActuel = await sharp(req.file.buffer).resize({width: 10, height: 10}).raw().toBuffer()
         const imageTemp = ((format !== 'gif') && (format !== 'webp'))?await sharp(req.file.buffer).toFile(PATH_PUBLIC+'/temp/'+req.file.originalname):await sharp(req.file.buffer, {animated: true}).gif({loop: 0}).toFile(PATH_PUBLIC+'/temp/'+req.file.originalname)
         const metadata = await sharp(PATH_PUBLIC+'/temp/'+req.file.originalname).metadata()
-        dernierMediaRecu = {file: req.file, mini: miniActuel, taille: {width: metadata.width, height: metadata.height}}
+        dernierMediaRecu = {file: req.file, mini: miniActuel, taille: {width: metadata.width, height: metadata.height, source: req.body.source}}
         let unicite = true
         let aVerifier = []
         const listeMedias = await mediaBDD.find({type: 'image'})

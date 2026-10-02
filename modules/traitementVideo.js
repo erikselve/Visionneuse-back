@@ -22,7 +22,7 @@ async function sauvegarde(fichier) {
         fs.renameSync('./temp/temp.jpg', PATH_VIDEO+'couvertures/'+nouveauNom.split('.')[0]+'.jpg')
         // fs.copyFileSync('./temp/temp.jpg', PATH_VIDEO+'couvertures/'+nouveauNom.split('.')[0]+'.jpg')
         fs.renameSync(PATH_PUBLIC+'/temp/'+fichier.file.originalname, PATH_VIDEO+nouveauNom)
-        const vidRecue = new mediaBDD({name: nouveauNom, taille: fichier.taille, miniatureBuffer: fichier.mini, type: 'video', nbUtilisation: -1, tags: fichier.tags, favori: false})
+        const vidRecue = new mediaBDD({name: nouveauNom, taille: fichier.taille, miniatureBuffer: fichier.mini, type: 'video', nbUtilisation: -1, tags: fichier.tags, favori: false, source: fichier.source})
         await vidRecue.save()
         fs.renameSync('./temp/instant_1.jpg', './temp/toto.jpg')
         if (fs.existsSync('./temp/instant_2.jpg'))

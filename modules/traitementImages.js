@@ -21,7 +21,7 @@ async function sauvegarde(fichier) {
         //await sharp(fichier.file.buffer).toFile(PATH_IMAGE+fichier.file.originalname)
         const nouveauNom = Math.floor(Math.random()*100)+'-'+Date.now()+'-'+fichier.file.originalname
         fs.renameSync(PATH_PUBLIC+'/temp/'+fichier.file.originalname, PATH_IMAGE+nouveauNom)
-        const imRecue = new mediaBDD({name: nouveauNom, taille: fichier.taille, miniatureBuffer: fichier.mini, type: 'image', nbUtilisation: -1, tags: fichier.tags, favori: false})
+        const imRecue = new mediaBDD({name: nouveauNom, taille: fichier.taille, miniatureBuffer: fichier.mini, type: 'image', nbUtilisation: -1, tags: fichier.tags, favori: false, source: fichier.source})
         await imRecue.save()
         console.log('nouvelle image créée: '+nouveauNom);
     }

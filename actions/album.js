@@ -37,7 +37,7 @@ exports.upload = async (req, res) => {
                 indexFiles++
             } 
         }
-        dernierMediaRecu = {nom: req.body.nom, taille: tailleTome}
+        dernierMediaRecu = {nom: req.body.nom, taille: tailleTome, source: req.body.source}
         let unicite = true
         let aVerifier = []
         const listeMedias = await mediaBDD.find({type: 'album'})

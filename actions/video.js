@@ -35,7 +35,7 @@ exports.upload = async (req, res) => {
                 mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).extend({right: 20}).composite([{input: miniTemp, left: 10, top: 0}, {input: miniTemp, left: 20, top: 0}]).toBuffer()    
             }
             
-            dernierMediaRecu = {file: req.file, mini: mini, taille: {width: couverture.width, height: couverture.height, duree: nouvelleVideo.metadata.duration.seconds}}
+            dernierMediaRecu = {file: req.file, mini: mini, taille: {width: couverture.width, height: couverture.height, duree: nouvelleVideo.metadata.duration.seconds}, source: req.body.source}
             let unicite = true
             let aVerifier = []
             // for (const video of listeVideosBDD) {
