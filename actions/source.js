@@ -1,18 +1,27 @@
 const sourceBDD = require('../models/source.js')
+const mediaBDD = require('../models/media.js')
+const SEUIL_NOTES = 10
 
 async function formatAllSources() {
     const sources = await sourceBDD.find().sort({derniereConsult: 1})
     const dureeConsultMax = Date.now() - Date.parse(sources[0].derniereConsult)
+    // cumul des notes de médias par source et par critère
+    const mediasNotes = await mediaBDD.find({source: {$ne: null}}, 'source notes')
+    const critères = ['graphisme', 'animation', 'miseEnScene', 'son']
+    let cumuls = {}
+    mediasNotes.forEach(media => {
+        if (cumuls[media.source] === undefined) {
+            cumuls[media.source] = {graphisme: {somme: 0, nb: 0}, animation: {somme: 0, nb: 0}, miseEnScene: {somme: 0, nb: 0}, son: {somme: 0, nb: 0}}
+        }
+        critères.forEach(critere => {
+            if (media.notes && media.notes[critere] !== null && media.notes[critere] !== undefined) {
+                cumuls[media.source][critere].somme += media.notes[critere]
+                cumuls[media.source][critere].nb++
+            }
+        })
+    })
     let meilleureUrgence = 0
-    rep = []
-    // sources.forEach(element => {
-    //     let urgence = (Date.now() - Date.parse(element.derniereConsult)) * 100 / dureeConsultMax
-    //     rep.push({...element._doc, urgence: urgence})
-    //     if (urgence > meilleureUrgence) meilleureUrgence = urgence
-    // })
-    // rep.forEach(element => {
-    //     rep.urgence = rep.urgence * 100 / meilleureUrgence
-    // })
+    let rep = []
     sources.forEach(source => {
         let modificateur = 100
         source.origines.forEach(origine => {
@@ -20,7 +29,15 @@ async function formatAllSources() {
             duree.setTime(Date.now() - Date.parse(origine.derniereRecup))
             if ((duree.getFullYear() + duree.getMonth()*0.5) > 1.5) modificateur = 66
         })
-        rep.push({...source._doc, urgence: (Date.now() - Date.parse(source.derniereConsult)) / dureeConsultMax * modificateur})
+        // notes calculées : seulement pour les critères atteignant le seuil
+        let notesCalculees = {}
+        if (cumuls[source.nom] !== undefined) {
+            critères.forEach(critere => {
+                if (cumuls[source.nom][critere].nb >= SEUIL_NOTES)
+                    notesCalculees[critere] = Math.round(cumuls[source.nom][critere].somme / cumuls[source.nom][critere].nb)
+            })
+        }
+        rep.push({...source._doc, urgence: (Date.now() - Date.parse(source.derniereConsult)) / dureeConsultMax * modificateur, notesCalculees: notesCalculees})
     })
     return rep
 }

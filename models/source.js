@@ -1,18 +1,13 @@
 // dependencies
 const mongoose = require('mongoose');
-const {URL_BDD, NOM_BDD_SOURCES} = require('../data/config.js')
+const {URL_BDD, NOM_BDD_SOURCES, NOM_BASE} = require('../data/config.js')
 
 // connect to database
 // mongoose.set('strictQuery', false);
-mongoose.connect('mongodb://'+URL_BDD+'Visioneuse');
+mongoose.connect('mongodb://'+URL_BDD+NOM_BASE);
 
 // Create Model
 const Schema = mongoose.Schema;
-
-// const origine = new Schema({
-//     nom: String,
-//     derniereRecup : Date
-// })
 
 const source = new Schema({
   nom: String,
@@ -23,8 +18,6 @@ const source = new Schema({
   animation: Number,
   son: Number
 })
-
-//https://f95zone.to/threads/test-collection-2011-10-21-test.74133/
 
 // Export Model
 module.exports = mongoose.model(NOM_BDD_SOURCES, source);

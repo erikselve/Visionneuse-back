@@ -12,5 +12,7 @@ router.put('/tags', mediaActions.ajouteTag)
 router.put('/favori', mediaActions.changeFavori)
 router.post('/favori', mediaActions.getMediaFavoriAleatoire)
 router.post('/favori/court', mediaActions.getMediaFavoriCourtAleatoire)
+router.put('/source', mediaActions.changeSource)
+router.put('/notes', mediaActions.changeNotes)
 
 module.exports = router;

@@ -47,7 +47,7 @@ exports.filtreMedias = async (req, res) => {
         else res.status(400).json({message: 'filtre de sélection de médias non reconnu'})
         const max = listeMedias.length
         const result = listeMedias.filter((elt, index) => index >= req.body.nbImages*req.body.page && index < req.body.nbImages*(req.body.page+1)).map((elt) => {
-            return {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori}
+            return {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source}
         })
         res.status(200).json({res: result, max: max})
     }
@@ -173,6 +173,34 @@ exports.getMediaFavoriCourtAleatoire = async (req, res) => {
         res.status(200).json({nom: media.name, type: media.type, taille: media.taille})
     } catch (error) {
         console.log(error)
+        res.status(400).json({message: 'Impossible à effectuer'})
+    }
+}
+
+exports.changeSource = async (req, res) => {
+    try {
+        console.log('Requête reçue: associer la source '+req.body.source+' au média '+req.body.media);
+        let media = await mediaBDD.findOne({name: req.body.media})
+        media.source = (req.body.source === 'Inconnu') ? null : req.body.source
+        await media.save()
+        res.status(200).json({message: 'source modifiée'})
+    }
+    catch(error) {
+        console.log(error);
+        res.status(400).json({message: 'Impossible à effectuer'})
+    }
+}
+
+exports.changeNotes = async (req, res) => {
+    try {
+        console.log('Requête reçue: noter le média '+req.body.media);
+        let media = await mediaBDD.findOne({name: req.body.media})
+        media.notes = req.body.notes
+        await media.save()
+        res.status(200).json({message: 'notes modifiées'})
+    }
+    catch(error) {
+        console.log(error);
         res.status(400).json({message: 'Impossible à effectuer'})
     }
 }

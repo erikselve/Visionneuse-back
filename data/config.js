@@ -6,6 +6,7 @@ module.exports = {
     URL_BDD: '127.0.0.1/',
     NOM_BDD_MEDIAS: 'medias',
     NOM_BDD_SOURCES: 'sources',
+    NOM_BASE: 'Visioneuse',
     // NOM_BDD_MEDIAS: 'medias_surs',
 
     //PATH_PUBLIC: './public'
