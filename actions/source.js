@@ -88,6 +88,15 @@ exports.ajouteSourceManuelle = async (req, res) => {
             const source = new sourceBDD({nom: nom, origines: [{nom: 'manuel', derniereRecup: new Date()}], derniereConsult: new Date(), graphisme: 0, miseEnScene: 0, animation: 0, son: 0})
             await source.save()
         }
+        else {
+            const indexOrigine = existant.origines.findIndex((elt) => elt.nom === 'manuel')
+            if (indexOrigine === -1)
+                existant.origines = [...existant.origines, {nom: 'manuel', derniereRecup: new Date()}]
+            else
+                existant.origines[indexOrigine].derniereRecup = new Date()
+            existant.derniereConsult = new Date()
+            await existant.save()
+        }
         formatAllSources().then((rep) => {
             res.status(200).json({liste: rep, auteur: nom})
         })
