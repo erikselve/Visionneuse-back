@@ -1,4 +1,5 @@
 const mediaBDD = require('../models/media.js')
+const assainir = require('../modules/assainissement.js')
 const {recupereSource, recupereImage, creeRepertoire} = require('../modules/parseWeb')
 const {parse} = require('node-html-parser')
 const htmlCreator = require('html-creator')
@@ -22,6 +23,9 @@ exports.getAlbum = async (req, res) => {
 exports.upload = async (req, res) => {
     try {
         console.log('Requête reçue: réception d\'un nouvel album: '+req.body.nom);
+        if (assainir.fragChemin(req.body.nom) === null) {
+            return res.status(400).json({message: 'Nom d\'album invalide'})
+        }
         if (!Array.isArray(req.body.tome)) req.body.tome = [req.body.tome]
         const tailleTome = req.body.tome.map(elt => parseInt(elt))
         fs.mkdirSync(PATH_PUBLIC+'/temp/'+req.body.nom)
@@ -60,7 +64,9 @@ exports.upload = async (req, res) => {
 
 exports.supprime = (req, res) => {
     console.log('Requête reçue: suppression de l\'album '+req.body.name);
-    supprimeAlbum(req.body.name).then(() => res.status(200).json({message: 'Album supprimé'}))
+    const nom = assainir.fragChemin(req.body.name)
+    if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+    supprimeAlbum(nom).then(() => res.status(200).json({message: 'Album supprimé'}))
 }
 
 exports.parseErofus = (req, res) => {

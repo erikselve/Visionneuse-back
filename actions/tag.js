@@ -1,6 +1,7 @@
 const tagBDD = require('../models/tag.js')
 const categorieBDD = require('../models/categoriesTag.js')
 const tag = require('../models/tag.js')
+const assainir = require('../modules/assainissement.js')
 
 //fonctions locales
 function formatString(mot) {
@@ -58,8 +59,10 @@ exports.decrementeTag =async (nom) => {
 
 exports.creeCategorie = async (req, res) => {
     try{
-        console.log('requête reçue: ajouter la catégorie de tags '+req.body.nom);
-        const categorie = new categorieBDD({nom: req.body.nom, nombre: 0})
+        const nom = assainir.texteStocke(req.body.nom)   // ou req.body.media selon l'action
+        if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        console.log('requête reçue: ajouter la catégorie de tags '+nom);
+        const categorie = new categorieBDD({nom: nom, nombre: 0})
         await categorie.save()
         res.status(200).json({message: 'Catégorie ajoutée'})
     }
@@ -71,11 +74,13 @@ exports.creeCategorie = async (req, res) => {
 
 exports.ajoute = async (req, res) => {
     try{
-        console.log('requête reçue: ajouter le tag '+req.body.nom+' à la catégorie '+req.body.categorie);
-        const test = await tagBDD.findOne({nom: req.body.nom})
+        const nom = assainir.texteStocke(req.body.nom)   // ou req.body.media selon l'action
+        if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        console.log('requête reçue: ajouter le tag '+nom+' à la catégorie '+req.body.categorie);
+        const test = await tagBDD.findOne({nom: nom})
         if (test === null) {
             const categorie = await categorieBDD.findOne({nom: req.body.categorie})
-            const tag = new tagBDD({nom: req.body.nom, nomFormate: formatString(req.body.nom), categorie: categorie._id.toHexString(), nombre: 0})
+            const tag = new tagBDD({nom: nom, nomFormate: formatString(nom), categorie: categorie._id.toHexString(), nombre: 0})
             await tag.save()
             const listeTag = await tagBDD.find().sort({nomFormate: 1})
             res.status(200).json({res : listeTag.filter(tag => tag.categorie === categorie._id.toHexString()).map(element => element.nom)})
@@ -93,10 +98,12 @@ exports.ajoute = async (req, res) => {
 
 exports.renomme = async (req, res) => {
     try {
-        console.log('Requête reçue: modifier le tag '+req.body.tag+' par '+req.body.nouvTag);
+        const nom = assainir.texte(req.body.nouvTag)   // ou req.body.media selon l'action
+        if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        console.log('Requête reçue: modifier le tag '+req.body.tag+' par '+nom);
         const tag = await tagBDD.findOne({nom: req.body.tag})
-        tag.nom = req.body.nouvTag
-        tag.nomFormate = formatString(req.body.nouvTag)
+        tag.nom = nom
+        tag.nomFormate = formatString(nom)
         await tag.save()
         const listeCat = await categorieBDD.find()
         const listeTag = await tagBDD.find().sort({nomFormate: 1})

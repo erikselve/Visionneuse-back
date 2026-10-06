@@ -70,19 +70,6 @@ app.get('/test', async (req, res) => {
     res.status(200).json({message: 'action effectuée'})
 })
 
-app.get('/sauvegarde/download/:nom', (req, res) => {
-    console.log('requête reçue: envoyer la sauvegarde '+req.params.nom)
-    fs.readFile('./sauvegardes/'+req.params.nom+'.sav', 'utf8', (err, data) => {
-        if (err) {
-            console.error('Erreur pour lire le fichier '+req.params.nom+'.sav')
-            res.status(404).json({message: 'La sauvegarde n\'a pas pu être chargée'})
-        }
-        else {
-            res.status(200).json(JSON.parse(data))
-        }
-    })
-})
-
 //lancement du serveur
 server.listen(process.env.PORT || 4000);
 console.log('Serveur à l\'écoute sur le port : 4000');

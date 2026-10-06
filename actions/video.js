@@ -1,4 +1,5 @@
 const mediaBDD = require('../models/media.js')
+const assainir = require('../modules/assainissement.js')
 const fs = require('fs')
 const ffmpeg = require('ffmpeg')
 const sharp = require('sharp')
@@ -12,6 +13,9 @@ exports.upload = async (req, res) => {
         req.file.originalname = req.file.originalname.replaceAll(' ', '_')
         req.file.originalname = req.file.originalname.replaceAll('&', 'and')
         req.file.originalname = req.file.originalname.replaceAll('#', 'n')
+        if (assainir.fragChemin(req.file.originalname) === null) {
+            return res.status(400).json({message: 'Nom de fichier invalide'})
+        }
         fs.writeFileSync(PATH_PUBLIC+'/temp/'+req.file.originalname, req.file.buffer)
         const listeVideosBDD = await mediaBDD.find({type: 'video'})
 
@@ -61,6 +65,9 @@ exports.uploadLocal = async (req, res) => {
     req.body.titre = req.body.titre.replaceAll(' ', '_')
     req.body.titre = req.body.titre.replaceAll('&', 'and')
     req.body.titre = req.body.titre.replaceAll('#', 'n')
+    if (assainir.fragChemin(req.body.titre) === null) {
+        return res.status(400).json({message: 'Titre invalide'})
+    }
     fs.renameSync('./temp/'+ancienTitre, PATH_PUBLIC+'/temp/'+req.body.titre)
     const nouvelleVideo = await new ffmpeg(PATH_PUBLIC+'/temp/'+req.body.titre)
     // await nouvelleVideo.fnExtractFrameToJPG('./temp', {number: 3, every_n_percentage: 30, file_name: 'instant.jpg'})
@@ -77,5 +84,7 @@ exports.uploadLocal = async (req, res) => {
 
 exports.supprime = (req, res) => {
     console.log('Requête reçue: suppression de la vidéo '+req.body.name)
-    supprimeVideo(req.body.name).then(() => res.status(200).json({message: 'Fichier supprimé'}))
+    const nom = assainit.fragChemin(req.body.name)
+    if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+    supprimeVideo(nom).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }

@@ -1,5 +1,6 @@
 const sourceBDD = require('../models/source.js')
 const mediaBDD = require('../models/media.js')
+const assainir = require('../modules/assainissement.js')
 const SEUIL_NOTES = 10
 
 async function formatAllSources() {
@@ -82,7 +83,8 @@ exports.ajouteSourceF95 = async (req, res) => {
 exports.ajouteSourceManuelle = async (req, res) => {
     try {
         console.log('Requête reçue: ajout manuel de la source '+req.body.nom);
-        const nom = req.body.nom.trim()
+        const nom = assainir.texteStocke(req.body.nom)
+        if (nom === null) return res.status(400).json({message: 'Nom de source invalide'})
         let existant = await sourceBDD.findOne({nom: nom})
         if (existant === null) {
             const source = new sourceBDD({nom: nom, origines: [{nom: 'manuel', derniereRecup: new Date()}], derniereConsult: new Date(), graphisme: 0, miseEnScene: 0, animation: 0, son: 0})

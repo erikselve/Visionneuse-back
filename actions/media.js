@@ -1,4 +1,5 @@
 const mediaBDD = require('../models/media.js')
+const assainir = require('../modules/assainissement.js')
 const tagBDD = require('../models/tag.js')
 const { getNomTags, getTagID, incrementeTag, decrementeTag } = require('./tag.js')
 const { sauvegarde, supprime } = require('../modules/traitementImages.js')
@@ -72,8 +73,10 @@ exports.filtreMedias = async (req, res) => {
 
 exports.getTagsMedia = async (req, res) => {
     try {
-        console.log('Requête reçue: envoie de la liste des tags associés au média '+req.body.nom);
-        const media = await mediaBDD.findOne({name: req.body.nom})
+        const nom = assainir.texte(req.body.nom)   // ou req.body.media selon l'action
+        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+        console.log('Requête reçue: envoie de la liste des tags associés au média '+nom);
+        const media = await mediaBDD.findOne({name: nom})
         if (media.nbUtilisation === -1) {
             media.nbUtilisation = 0
             media.save()
@@ -107,7 +110,8 @@ exports.retireDouble = async (req, res) => {
         }
         else fs.unlinkSync(PATH_PUBLIC+'/temp/'+dernierMediaRecu.file.originalname)
         for (let index = 0; index < req.body.liste.length; index++) {
-            const element = req.body.liste[index]
+            const element = assainir.fragChemin(req.body.liste[index])
+            if (element === null) continue   // entrée invalide : on l'ignore, on ne casse pas la requête
             if (req.body.typeMedia === 'video')
                 supprimeVideo(element)
             else if (req.body.typeMedia === 'album')
@@ -125,8 +129,10 @@ exports.retireDouble = async (req, res) => {
 
 exports.retireTag = async (req, res) => {
     try{
-        console.log('Requête reçue: retirer le tag '+req.body.tag+' associé au média '+req.body.media);
-        let media = await mediaBDD.findOne({name: req.body.media})
+        const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
+        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+        console.log('Requête reçue: retirer le tag '+req.body.tag+' associé au média '+nom);
+        let media = await mediaBDD.findOne({name: nom})
         const tag = await decrementeTag(req.body.tag)
         media.tags = media.tags.filter(elt => elt !== tag)
         await media.save()
@@ -140,8 +146,10 @@ exports.retireTag = async (req, res) => {
 
 exports.ajouteTag = async (req, res) => {
     try{
-        console.log('Requête reçue: associer le tag '+req.body.tag+' au média '+req.body.media);
-        let media = await mediaBDD.findOne({name: req.body.media})
+        const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
+        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+        console.log('Requête reçue: associer le tag '+req.body.tag+' au média '+nom);
+        let media = await mediaBDD.findOne({name: nom})
         const tag = await incrementeTag(req.body.tag)
         media.tags = [...media.tags, tag]
         await media.save()
@@ -154,7 +162,9 @@ exports.ajouteTag = async (req, res) => {
 }
 
 exports.changeFavori = async (req, res) => {
-    const media = await mediaBDD.findOne({name: req.body.media})
+    const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
+    if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+    const media = await mediaBDD.findOne({name: nom})
     media.favori = !media.favori
     await media.save()
     res.status(200).json({message: 'nouvel état favori validé'})
@@ -206,8 +216,10 @@ exports.changeSource = async (req, res) => {
 
 exports.changeNotes = async (req, res) => {
     try {
-        console.log('Requête reçue: noter le média '+req.body.media);
-        let media = await mediaBDD.findOne({name: req.body.media})
+        const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
+        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+        console.log('Requête reçue: noter le média '+nom);
+        let media = await mediaBDD.findOne({name: nom})
         media.notes = req.body.notes
         await media.save()
         res.status(200).json({message: 'notes modifiées'})

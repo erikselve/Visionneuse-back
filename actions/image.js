@@ -1,4 +1,5 @@
 const mediaBDD = require('../models/media.js')
+const assainir = require('../modules/assainissement.js')
 const sharp = require('sharp')
 const {getNomTags} = require('./tag.js')
 const {minisIdentiques, sauvegarde, supprime} = require('../modules/traitementImages.js')
@@ -9,6 +10,9 @@ exports.upload = async (req, res) => {
     try {
         if (req.file.originalname.length > 150) { 
             req.file.originalname = req.file.originalname.slice(0, 150)+req.file.originalname.split('.')[1]
+        }
+        if (assainir.fragChemin(req.file.originalname) === null) {
+            return res.status(400).json({message: 'Nom de fichier invalide'})
         }
         console.log('Requête reçue: réception d\'une nouvelle image à traiter: '+req.file.originalname);
         const format = req.file.mimetype.split('/')[1]
@@ -38,6 +42,8 @@ exports.upload = async (req, res) => {
 
 exports.supprime = (req, res) => {
     console.log('Requête reçue: suppression de l\'image '+req.body.name);
-    supprime(req.body.name)
+    const nom = assainir.fragChemin(req.body.name)
+    if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+    supprime(nom)
     res.status(200).json({message: 'Fichier supprimé'})
 }
