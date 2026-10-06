@@ -33,6 +33,14 @@ exports.filtreMedias = async (req, res) => {
             console.log('Requête reçue: envoi de '+req.body.nbImages+' médias qui n\'ont pas été vus');
             listeMedias = await mediaBDD.find({nbUtilisation: -1, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)         
         }
+        else if (req.body.filtre === 'sourceInconnue') {
+            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias à la source inconnue');
+            listeMedias = await mediaBDD.find({source: null, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)
+        }
+        else if (req.body.filtre === 'sansNote') {
+            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias sans note');
+            listeMedias = await mediaBDD.find({'notes.graphisme': null, 'notes.animation': null, 'notes.miseEnScene': null, 'notes.son': null, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)
+        }
         else if (req.body.filtre === 'filtre') {
             console.log('Requête reçue: envoi de '+req.body.nbImages+' médias selon un filtre des tags');
             let filtre = []
