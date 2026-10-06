@@ -39,7 +39,12 @@ exports.filtreMedias = async (req, res) => {
         }
         else if (req.body.filtre === 'sansNote') {
             console.log('Requête reçue: envoi de '+req.body.nbImages+' médias sans note');
-            listeMedias = await mediaBDD.find({'notes.graphisme': null, 'notes.animation': null, 'notes.miseEnScene': null, 'notes.son': null, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)
+            listeMedias = await mediaBDD.find({$nor: [
+                {'notes.graphisme': {$ne: null}},
+                {'notes.animation': {$ne: null}},
+                {'notes.miseEnScene': {$ne: null}},
+                {'notes.son': {$ne: null}}
+            ], type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)
         }
         else if (req.body.filtre === 'filtre') {
             console.log('Requête reçue: envoi de '+req.body.nbImages+' médias selon un filtre des tags');
