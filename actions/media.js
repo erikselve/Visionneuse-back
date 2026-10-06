@@ -47,7 +47,7 @@ exports.filtreMedias = async (req, res) => {
         else res.status(400).json({message: 'filtre de sélection de médias non reconnu'})
         const max = listeMedias.length
         const result = listeMedias.filter((elt, index) => index >= req.body.nbImages*req.body.page && index < req.body.nbImages*(req.body.page+1)).map((elt) => {
-            return {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source}
+            return {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
         })
         res.status(200).json({res: result, max: max})
     }
