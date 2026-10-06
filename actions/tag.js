@@ -4,14 +4,7 @@ const tag = require('../models/tag.js')
 
 //fonctions locales
 function formatString(mot) {
-    mot = mot.toLocaleLowerCase()
-    mot = mot.replaceAll('é', 'e')
-    mot = mot.replaceAll('è', 'e')
-    mot = mot.replaceAll('à', 'a')
-    mot = mot.replaceAll('ê', 'e')
-    mot = mot.replaceAll('ô', 'o')
-    mot = mot.replaceAll('ï', 'i')
-    return mot
+    return mot.toLocaleLowerCase().replaceAll('œ', 'oe').replaceAll('æ', 'ae').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 //fonctions exportées
@@ -103,6 +96,7 @@ exports.renomme = async (req, res) => {
         console.log('Requête reçue: modifier le tag '+req.body.tag+' par '+req.body.nouvTag);
         const tag = await tagBDD.findOne({nom: req.body.tag})
         tag.nom = req.body.nouvTag
+        tag.nomFormate = formatString(req.body.nouvTag)
         await tag.save()
         const listeCat = await categorieBDD.find()
         const listeTag = await tagBDD.find().sort({nomFormate: 1})
