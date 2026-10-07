@@ -3,25 +3,27 @@ const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
 const SEUIL_NOTES = 10
 
-async function formatAllSources() {
+async function formatAllSources(avecNotes = true) {
     const sources = await sourceBDD.find().sort({derniereConsult: 1})
     const dureeConsultMax = Date.now() - Date.parse(sources[0].derniereConsult)
-    // cumul des notes de médias par source et par critère
-    const mediasNotes = await mediaBDD.find({source: {$ne: null}}, 'source notes')
+    // cumul des notes de médias par source et par critère — uniquement si demandé :
+    // ce scan lit tous les médias notés, il est réservé aux routes où les notes changent
     const critères = ['graphisme', 'animation', 'miseEnScene', 'son']
     let cumuls = {}
-    mediasNotes.forEach(media => {
-        if (cumuls[media.source] === undefined) {
-            cumuls[media.source] = {graphisme: {somme: 0, nb: 0}, animation: {somme: 0, nb: 0}, miseEnScene: {somme: 0, nb: 0}, son: {somme: 0, nb: 0}}
-        }
-        critères.forEach(critere => {
-            if (media.notes && media.notes[critere] !== null && media.notes[critere] !== undefined) {
-                cumuls[media.source][critere].somme += media.notes[critere]
-                cumuls[media.source][critere].nb++
+    if (avecNotes) {
+        const mediasNotes = await mediaBDD.find({source: {$ne: null}}, 'source notes')
+        mediasNotes.forEach(media => {
+            if (cumuls[media.source] === undefined) {
+                cumuls[media.source] = {graphisme: {somme: 0, nb: 0}, animation: {somme: 0, nb: 0}, miseEnScene: {somme: 0, nb: 0}, son: {somme: 0, nb: 0}}
             }
+            critères.forEach(critere => {
+                if (media.notes && media.notes[critere] !== null && media.notes[critere] !== undefined) {
+                    cumuls[media.source][critere].somme += media.notes[critere]
+                    cumuls[media.source][critere].nb++
+                }
+            })
         })
-    })
-    let meilleureUrgence = 0
+    }
     let rep = []
     sources.forEach(source => {
         let modificateur = 100
@@ -32,7 +34,7 @@ async function formatAllSources() {
         })
         // notes calculées : seulement pour les critères atteignant le seuil
         let notesCalculees = {}
-        if (cumuls[source.nom] !== undefined) {
+        if (avecNotes && cumuls[source.nom] !== undefined) {
             critères.forEach(critere => {
                 if (cumuls[source.nom][critere].nb >= SEUIL_NOTES)
                     notesCalculees[critere] = Math.round(cumuls[source.nom][critere].somme / cumuls[source.nom][critere].nb)
@@ -75,7 +77,7 @@ exports.ajouteSourceF95 = async (req, res) => {
         }
     }
 
-    formatAllSources().then((rep) => {
+    formatAllSources(false).then((rep) => {
         res.status(200).json({liste: rep, auteur: auteur})
     })
 }
@@ -99,7 +101,7 @@ exports.ajouteSourceManuelle = async (req, res) => {
             existant.derniereConsult = new Date()
             await existant.save()
         }
-        formatAllSources().then((rep) => {
+        formatAllSources(false).then((rep) => {
             res.status(200).json({liste: rep, auteur: nom})
         })
     } catch (error) {
@@ -138,7 +140,7 @@ exports.setNote = async (req, res) => {
     await source.save()
     // const sources = await sourceBDD.find()
     // res.status(200).json({liste: sources})
-    formatAllSources().then((rep) => {
+    formatAllSources(false).then((rep) => {
         res.status(200).json({liste: rep})
     })
 }
@@ -149,7 +151,34 @@ exports.consulte = async (req, res) => {
 
     source.derniereConsult = new Date()
     await source.save()
-    formatAllSources().then((rep) => {
+    formatAllSources(false).then((rep) => {
         res.status(200).json({liste: rep})
     })    
+}
+
+exports.renomme = async (req, res) => {
+    try {
+        console.log('Requête reçue: renommer la source '+req.body.ancienNom+' en '+req.body.nouvNom);
+        const ancienNom = assainir.texte(req.body.ancienNom)
+        const nouvNom = assainir.texteStocke(req.body.nouvNom)
+        if (ancienNom === null || nouvNom === null)
+            return res.status(400).json({message: 'Nom de source invalide'})
+        const existant = await sourceBDD.findOne({nom: nouvNom})
+        if (existant !== null && existant.nom !== ancienNom)
+            return res.status(409).json({message: 'Une source porte déjà ce nom'})
+        const source = await sourceBDD.findOne({nom: ancienNom})
+        if (source === null)
+            return res.status(404).json({message: 'Source introuvable'})
+        source.nom = nouvNom
+        await source.save()
+        // le garde-fou lui-même : propagation aux médias qui référencent la source
+        const maj = await mediaBDD.updateMany({source: ancienNom}, {source: nouvNom})
+        console.log('Renommage propagé à '+maj.modifiedCount+' médias');
+        formatAllSources(false).then((rep) => {
+            res.status(200).json({liste: rep, auteur: nouvNom})
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({message: 'Impossible de renommer la source'})
+    }
 }

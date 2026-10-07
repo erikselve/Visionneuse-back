@@ -1,12 +1,13 @@
 const express = require('express')
 const router = express.Router()
 
-const userActions = require('../actions/source')
+const sourceActions = require('../actions/source')
 
-router.post('/ajout/:origine', userActions.ajouteSourceF95)
-router.post('/ajoutManuel', userActions.ajouteSourceManuelle)
-router.get('/', userActions.getAllSources)
-router.put('/note', userActions.setNote)
-router.patch('/consulte', userActions.consulte)
+router.post('/ajout/:origine', sourceActions.ajouteSourceF95)
+router.post('/ajoutManuel', sourceActions.ajouteSourceManuelle)
+router.get('/', sourceActions.getAllSources)
+router.put('/note', sourceActions.setNote)
+router.patch('/consulte', sourceActions.consulte)
+router.put('/rename', sourceActions.renomme)
 
 module.exports = router;
