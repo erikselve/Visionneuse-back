@@ -1,5 +1,6 @@
 const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
+const {enregistre, consomme} = require('../modules/mediaEnAttente.js')
 const fs = require('fs')
 const ffmpeg = require('ffmpeg')
 const sharp = require('sharp')
@@ -39,7 +40,7 @@ exports.upload = async (req, res) => {
                 mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).extend({right: 20}).composite([{input: miniTemp, left: 10, top: 0}, {input: miniTemp, left: 20, top: 0}]).toBuffer()    
             }
             
-            dernierMediaRecu = {file: req.file, mini: mini, taille: {width: couverture.width, height: couverture.height, duree: nouvelleVideo.metadata.duration.seconds}, source: req.body.source}
+            enregistre({file: req.file, mini: mini, taille: {width: couverture.width, height: couverture.height, duree: nouvelleVideo.metadata.duration.seconds}, source: req.body.source})
             let unicite = true
             let aVerifier = []
             // for (const video of listeVideosBDD) {
@@ -49,7 +50,8 @@ exports.upload = async (req, res) => {
             //     }
             // }
             if (unicite) {
-                sauvegardeVideo(dernierMediaRecu).then(() => res.status(200).json({message: 'Bien reçu'}))
+                const mediaRecu = consomme()
+                sauvegardeVideo(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'}))
             }
             else res.status(300).json({listeVerif: aVerifier, taille:{width: couverture.width, height: couverture.height}, nouveauNom: req.file.originalname, message: 'Des images sont peut-être identiques, confirmation nécessaire'})
     }
@@ -78,8 +80,7 @@ exports.uploadLocal = async (req, res) => {
     // const miniTemp2 = await sharp('./temp/instant_3.jpg').resize({width: 10, height:10}).toBuffer()
     // const mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).extend({right: 20}).composite([{input: miniTemp, left: 10, top: 0}, {input: miniTemp2, left: 20, top: 0}]).toBuffer()
     const mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).toBuffer()
-    dernierMediaRecu = {file: {originalname: req.body.titre}, mini: mini, taille: {width: couverture.width, height: couverture.height}}
-    sauvegardeVideo(dernierMediaRecu).then(() => res.status(200).json({message: 'Bien reçu'}))
+    sauvegardeVideo({file: {originalname: req.body.titre}, mini: mini, taille: {width: couverture.width, height: couverture.height}}).then(() => res.status(200).json({message: 'Bien reçu'}))
 }
 
 exports.supprime = (req, res) => {

@@ -1,5 +1,6 @@
 const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
+const {enregistre, consomme} = require('../modules/mediaEnAttente.js')
 const {recupereSource, recupereImage, creeRepertoire} = require('../modules/parseWeb')
 const {parse} = require('node-html-parser')
 const htmlCreator = require('html-creator')
@@ -41,7 +42,7 @@ exports.upload = async (req, res) => {
                 indexFiles++
             } 
         }
-        dernierMediaRecu = {nom: req.body.nom, taille: tailleTome, source: req.body.source}
+        enregistre({nom: req.body.nom, taille: tailleTome, source: req.body.source})
         let unicite = true
         let aVerifier = []
         const listeMedias = await mediaBDD.find({type: 'album'})
@@ -52,7 +53,8 @@ exports.upload = async (req, res) => {
             }
         }
         if (unicite) {
-            sauvegardeAlbum(dernierMediaRecu).then(() => res.status(200).json({message: 'Bien reçu'})) 
+            const mediaRecu = consomme()
+            sauvegardeAlbum(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'})) 
         }
         else res.status(300).json({listeVerif: aVerifier, taille: tailleTome , message: 'Des albums sont peut-être identiques, confirmation nécessaire'})
 
@@ -146,7 +148,7 @@ exports.parse8muses = async (req, res) => {
                 }
             }
         }
-        dernierMediaRecu = {nom: titre, taille: tailleTome}
+        rengistre({nom: titre, taille: tailleTome})
         let unicite = true
         let aVerifier = []
         const listeMedias = await mediaBDD.find({type: 'album'})
@@ -157,7 +159,8 @@ exports.parse8muses = async (req, res) => {
             }
         }
         if (unicite) {
-            sauvegardeAlbum(dernierMediaRecu).then(() => res.status(200).json({message: 'Bien reçu'})) 
+            const mediaRecu = consomme()
+            sauvegardeAlbum(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'})) 
         }
         else res.status(300).json({listeVerif: aVerifier, taille: tailleTome , message: 'Des albums sont peut-être identiques, confirmation nécessaire'})
     } catch (error) {

@@ -1,5 +1,6 @@
 const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
+const { consomme } = require('../modules/mediaEnAttente.js')
 const tagBDD = require('../models/tag.js')
 const { getNomTags, getTagID, incrementeTag, decrementeTag } = require('./tag.js')
 const { sauvegarde, supprime } = require('../modules/traitementImages.js')
@@ -97,18 +98,23 @@ exports.getMediaAleatoire = async (req, res) => {
 }
 
 exports.retireDouble = async (req, res) => {
-    console.log('Requête reçue: suppression de médias suite au traitement de : '+dernierMediaRecu.file.originalname);    
-    try {        
-        if (!req.body.mediaBase) {
-            dernierMediaRecu.tags = req.body.tags
-            if (req.body.typeMedia === 'video')
-                sauvegardeVideo(dernierMediaRecu)
-            else if (req.body.typeMedia === 'album')
-                sauvegardeAlbum(dernierMediaRecu)
-            else
-                sauvegarde(dernierMediaRecu)
+    try {
+        const mediaRecu = consomme()
+        if (mediaRecu === null) {
+            console.log('Demande de confirmation de doublon alors qu\'il n\'y a pas de média en attente');
+            return res.status(400).json({message: 'Aucun média en attente de confirmation'})
         }
-        else fs.unlinkSync(PATH_PUBLIC+'/temp/'+dernierMediaRecu.file.originalname)
+        console.log('Requête reçue: suppression de médias suite au traitement de : '+mediaRecu.file.originalname);
+        if (!req.body.mediaBase) {
+            mediaRecu.tags = req.body.tags
+            if (req.body.typeMedia === 'video')
+                sauvegardeVideo(mediaRecu)
+            else if (req.body.typeMedia === 'album')
+                sauvegardeAlbum(mediaRecu)
+            else
+                sauvegarde(mediaRecu)
+        }
+        else fs.unlinkSync(PATH_PUBLIC+'/temp/'+mediaRecu.file.originalname)
         for (let index = 0; index < req.body.liste.length; index++) {
             const element = assainir.fragChemin(req.body.liste[index])
             if (element === null) continue   // entrée invalide : on l'ignore, on ne casse pas la requête
@@ -122,7 +128,7 @@ exports.retireDouble = async (req, res) => {
         res.status(200).json({message: 'Médias supprimées'})
     }
     catch(err) {
-        console.log('Impossible de supprimer des fichiers liés au traitement de '+dernierMediaRecu.file.originalname+' : '+err);
+        console.log('Impossible de supprimer des fichiers liés au traitement : '+err);
         res.status(500).json({message: 'Le serveur n\'a pas pu traiter les données correctement' })
     }
 }

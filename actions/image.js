@@ -1,5 +1,6 @@
 const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
+const {enregistre, consomme} = require('../modules/mediaEnAttente.js')
 const sharp = require('sharp')
 const {getNomTags} = require('./tag.js')
 const {minisIdentiques, sauvegarde, supprime} = require('../modules/traitementImages.js')
@@ -19,7 +20,7 @@ exports.upload = async (req, res) => {
         const miniActuel = await sharp(req.file.buffer).resize({width: 10, height: 10}).raw().toBuffer()
         const imageTemp = ((format !== 'gif') && (format !== 'webp'))?await sharp(req.file.buffer).toFile(PATH_PUBLIC+'/temp/'+req.file.originalname):await sharp(req.file.buffer, {animated: true}).gif({loop: 0}).toFile(PATH_PUBLIC+'/temp/'+req.file.originalname)
         const metadata = await sharp(PATH_PUBLIC+'/temp/'+req.file.originalname).metadata()
-        dernierMediaRecu = {file: req.file, mini: miniActuel, taille: {width: metadata.width, height: metadata.height, source: req.body.source}}
+        enregistre({file: req.file, mini: miniActuel, taille: {width: metadata.width, height: metadata.height, source: req.body.source}})
         let unicite = true
         let aVerifier = []
         const listeMedias = await mediaBDD.find({type: 'image'})
@@ -30,7 +31,8 @@ exports.upload = async (req, res) => {
             }
         }
         if (unicite) {
-            sauvegarde(dernierMediaRecu).then(() => res.status(200).json({message: 'Bien reçu'})) 
+            const mediaRecu = consomme()
+            sauvegarde(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'})) 
         }
         else res.status(300).json({listeVerif: aVerifier, taille:{width: imageTemp.width, height: imageTemp.height} , message: 'Des images sont peut-être identiques, confirmation nécessaire'})
     }
