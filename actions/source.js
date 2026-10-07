@@ -4,6 +4,7 @@ const assainir = require('../modules/assainissement.js')
 const SEUIL_NOTES = 10
 
 async function formatAllSources(avecNotes = true) {
+    const SEUIL_INACTIVITE = 365.25 * 24 * 3600 * 1000   // 1 an sans récupération → probablement inactive
     const sources = await sourceBDD.find().sort({derniereConsult: 1})
     const dureeConsultMax = Date.now() - Date.parse(sources[0].derniereConsult)
     // cumul des notes de médias par source et par critère — uniquement si demandé :
@@ -28,9 +29,7 @@ async function formatAllSources(avecNotes = true) {
     sources.forEach(source => {
         let modificateur = 100
         source.origines.forEach(origine => {
-            const duree = new Date()
-            duree.setTime(Date.now() - Date.parse(origine.derniereRecup))
-            if ((duree.getFullYear() + duree.getMonth()*0.5) > 1.5) modificateur = 66
+            if (Date.now() - Date.parse(origine.derniereRecup) > SEUIL_INACTIVITE) modificateur = 50
         })
         // notes calculées : seulement pour les critères atteignant le seuil
         let notesCalculees = {}
