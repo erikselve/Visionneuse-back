@@ -114,7 +114,8 @@ exports.retireDouble = async (req, res) => {
             else
                 sauvegarde(mediaRecu)
         }
-        else fs.unlinkSync(PATH_PUBLIC+'/temp/'+mediaRecu.file.originalname)
+        else fs.promises.unlink(PATH_PUBLIC+'/temp/'+mediaRecu.file.originalname)
+            .catch(() => console.log('Nettoyage: fichier temporaire '+mediaRecu.file.originalname+' pas supprimable (encore ouvert ?) — ignoré'))
         for (let index = 0; index < req.body.liste.length; index++) {
             const element = assainir.fragChemin(req.body.liste[index])
             if (element === null) continue   // entrée invalide : on l'ignore, on ne casse pas la requête
