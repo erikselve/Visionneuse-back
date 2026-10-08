@@ -1,7 +1,9 @@
 const sourceBDD = require('../models/source.js')
 const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
+const {calculeEvaluation, criteresParType, echelles} = require('../data/notation.js')
 const SEUIL_NOTES = 10
+
 
 async function formatAllSources(avecNotes = true) {
     const SEUIL_INACTIVITE = 365.25 * 24 * 3600 * 1000   // 1 an sans récupération → probablement inactive
@@ -44,7 +46,16 @@ async function formatAllSources(avecNotes = true) {
                     notesCalculees[critere] = Math.round(cumuls[source.nom][critere].somme / cumuls[source.nom][critere].nb)
             })
         }
-        rep.push({...source._doc, urgence: (Date.now() - Date.parse(source.derniereConsult)) / dureeConsultMax * modificateur, notesCalculees: notesCalculees, partFavoris: partFavoris})
+        // notes effectives : calculées si disponibles, sinon manuelles
+        const notesEffectives = {}
+        critères.forEach((critere) => {
+            notesEffectives[critere] = (notesCalculees[critere] !== undefined)
+                ? notesCalculees[critere]
+                : (source[critere] ?? null)
+        })
+        const evaluation = calculeEvaluation(notesEffectives, partFavoris)
+        const urgenceBrute = (Date.now() - Date.parse(source.derniereConsult)) / dureeConsultMax * modificateur
+        rep.push({...source._doc, urgence: urgenceBrute * evaluation / 100, evaluation: evaluation, partFavoris: partFavoris, notesCalculees: notesCalculees})    
     })
     return rep
 }
@@ -120,6 +131,10 @@ exports.getAllSources = async (req, res) => {
     formatAllSources().then((rep) => {
         res.status(200).json({liste: rep})
     })
+}
+
+exports.getNotation = async (req, res) => {
+    res.status(200).json({echelles: echelles, criteresParType: criteresParType})
 }
 
 exports.setNote = async (req, res) => {
