@@ -85,7 +85,7 @@ exports.uploadLocal = async (req, res) => {
 
 exports.supprime = (req, res) => {
     console.log('Requête reçue: suppression de la vidéo '+req.body.name)
-    const nom = assainit.fragChemin(req.body.name)
+    const nom = assainir.fragChemin(req.body.name)
     if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
     supprimeVideo(nom).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }
