@@ -28,14 +28,10 @@ var app = express();
 
 app.set('port', process.env.PORT || 4000);
 const server = http.createServer(app);
+server.requestTimeout = 0   // au cas où un upload lourd mettrait plus de 5mn
 app.use(express.json());
 app.use(cors());
 app.use(express.static(PATH_PUBLIC))
-// app.use(fileUpload({
-//     useTempFiles: true,
-//     tempFileDir: "./temp"
-// }))
-// const upload = multer({limits: {fileSize: 3000000000}})
 
 //gestion des requêtes reçues
 
@@ -54,17 +50,17 @@ app.get('/test', async (req, res) => {
 
     // const video = await new ffmpeg('./public/videos/81-1713713828315-2B Woods (1080) [NO WM].mp4')
     // console.log(video.metadata);
-    const data = await sourceBDD.find()
-    data.forEach(element => {
-        // console.log(element.nom+':'+element.miseEnScene);
+    // const data = await sourceBDD.find()
+    // data.forEach(element => {
 
-        if (element.miseEnScene > 1) {
-            element.miseEnScene = element.miseEnScene - 1
-            // console.log('nouveau: '+element.miseEnScene);
 
-        }
-        element.save()
-    })
+    //     if (element.miseEnScene > 1) {
+    //         element.miseEnScene = element.miseEnScene - 1
+
+
+    //     }
+    //     element.save()
+    // })
 
     console.log('terminé');
     res.status(200).json({message: 'action effectuée'})

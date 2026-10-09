@@ -24,4 +24,5 @@ module.exports = {
     // PATH_IMAGE: './public/medias_surs/',
     // PATH_VIDEO: './public/medias_surs/',
     // PATH_ALBUM: './public/medias_surs/',
+    TAILLE_MAX: 8 * 1024 * 1024 * 1024 //taille maximale des fichiers uploadés sur le serveur
 }
