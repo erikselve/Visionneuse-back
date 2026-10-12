@@ -1,8 +1,9 @@
 module.exports = {
     PRECISION_COMPARATIF_MEDIA: 35,
-    INDICE_IDENTICITE_IMAGE: 20, //25 était un bon indice pour détecter certaines images presque identique mais commençait à générer un minimum de faux positifs
-    //il fallait mettre l'indice à 38 pour repérer des différences de type un filtre de couleur apporté à une image mais ça génére trop de faux positifs
-    INDICE_IDENTICITE_VIDEO: 5,
+    SEUIL_IDENTICITE_IMAGE: 10, //distance de Hamming max (sur 64 bits) pour déclarer deux images « peut-être identiques »    INDICE_IDENTICITE_VIDEO: 5,
+    // 0 bit = fichiers identiques ; 1-6 = quasi-doublons (recompression, regrade léger) ; 
+    // >10 = probablement distincts. Le seuil 10/64 est la valeur de pratique courante — et votre flux à confirmation humaine pardonne 
+    // l'excès de zèle. Si les tests montrent trop de candidats sans intérêt, on descend ; des doublons manqués, on monte.
     URL_BDD: '127.0.0.1/',
     NOM_BDD_MEDIAS: 'medias',
     NOM_BDD_SOURCES: 'sources',

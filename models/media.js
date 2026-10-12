@@ -13,6 +13,7 @@ const mediaTraitee = new Schema({
   name: String,
   taille: {width: Number, height: Number, tomes: [Number], duree: Number}, //width et height pour tous, tomes pour les albums, duree pour les videos
   miniatureBuffer: Buffer, //pour les images et videos
+  hash: Buffer, // dHash 64 bits pour la comparaison d'images ; miniatureBuffer reste pour albums/vidéos
   tags: [String],
   source: String, // nom de la source (auteur) ; absent = 'Inconnu' à l'affichage
   type: String,
