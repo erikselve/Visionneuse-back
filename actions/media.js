@@ -7,7 +7,7 @@ const { sauvegarde, supprime } = require('../modules/traitementImages.js')
 const { sauvegardeVideo, supprimeVideo } = require('../modules/traitementVideo.js')
 const { sauvegardeAlbum, supprimeAlbum } = require('../modules/traitementAlbum.js')
 const fs = require('fs');
-const {PATH_PUBLIC} = require('../data/config.js')
+const {PATH_PUBLIC, DUREE_MARQUE_MODIF} = require('../data/config.js')
 
 exports.filtreMedias = async (req, res) => {
     try{
@@ -56,6 +56,10 @@ exports.filtreMedias = async (req, res) => {
                 condition.tags = {$all: filtre}
                 break;
             }
+            case 'modifieRecent':
+                console.log('Requête reçue: envoi de '+req.body.nbImages+' médias récemment modifiés');
+                condition.derniereModif = {$gte: new Date(Date.now() - DUREE_MARQUE_MODIF)};
+                break;
             default:
                 return res.status(400).json({message: 'filtre de sélection de médias non reconnu'})
         }
@@ -142,6 +146,7 @@ exports.retireTag = async (req, res) => {
         let media = await mediaBDD.findOne({name: nom})
         const tag = await decrementeTag(req.body.tag)
         media.tags = media.tags.filter(elt => elt !== tag)
+        media.derniereModif = new Date()
         await media.save()
         res.status(200).json({message: 'tags modifiés'})
     }
@@ -159,6 +164,7 @@ exports.ajouteTag = async (req, res) => {
         let media = await mediaBDD.findOne({name: nom})
         const tag = await incrementeTag(req.body.tag)
         media.tags = [...media.tags, tag]
+        media.derniereModif = new Date()
         await media.save()
         res.status(200).json({message: 'tags modifiés'})
     }
@@ -173,6 +179,7 @@ exports.changeFavori = async (req, res) => {
     if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
     const media = await mediaBDD.findOne({name: nom})
     media.favori = !media.favori
+    media.derniereModif = new Date()
     await media.save()
     res.status(200).json({message: 'nouvel état favori validé'})
 }
@@ -209,9 +216,12 @@ exports.getMediaFavoriCourtAleatoire = async (req, res) => {
 
 exports.changeSource = async (req, res) => {
     try {
-        console.log('Requête reçue: associer la source '+req.body.source+' au média '+req.body.media);
-        let media = await mediaBDD.findOne({name: req.body.media})
+        const nom = assainir.texte(req.body.media)
+        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
+        console.log('Requête reçue: associer la source '+req.body.source+' au média '+nom);
+        let media = await mediaBDD.findOne({name: nom})
         media.source = (req.body.source === 'Inconnu') ? null : req.body.source
+        media.derniereModif = new Date()
         await media.save()
         res.status(200).json({message: 'source modifiée'})
     }
@@ -228,6 +238,7 @@ exports.changeNotes = async (req, res) => {
         console.log('Requête reçue: noter le média '+nom);
         let media = await mediaBDD.findOne({name: nom})
         media.notes = req.body.notes
+        media.derniereModif = new Date()
         await media.save()
         res.status(200).json({message: 'notes modifiées'})
     }

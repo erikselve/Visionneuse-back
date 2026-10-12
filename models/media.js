@@ -24,6 +24,7 @@ const mediaTraitee = new Schema({
     miseEnScene: {type: Number, default: null},
     son: {type: Number, default: null}
   }, // indices dans les échelles du front ; null = critère non noté
+  derniereModif: {type: Date, default: null}, // date de la dernière modification faite via le front (notes, favori, source, tags) ; alimente le filtre « récemment modifiés »
 });
 
 // Export Model
