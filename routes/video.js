@@ -2,6 +2,8 @@ const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 
+//Ceci résulte de la tentative de passer la limite de taille d'upload des fichiers
+//Cela a aboutit à un soucis de la vitesse de la copie du fichier très lente dans le répertoire temp des fichiers de visioneuse
 // const assainir = require('../modules/assainissement.js')
 // const {PATH_PUBLIC, TAILLE_MAX} = require('../data/config.js')
 

@@ -11,7 +11,6 @@ const {PATH_PUBLIC} = require('../data/config.js')
 
 exports.filtreMedias = async (req, res) => {
     try{
-        let listeMedias
         let tri = {}
         if (req.body.tri === 'name') tri = {name: 1}
         let typeSelec = []
@@ -19,47 +18,48 @@ exports.filtreMedias = async (req, res) => {
         if (req.body.typeFiltres.album) typeSelec = [...typeSelec, 'album']
         if (req.body.typeFiltres.video) typeSelec = [...typeSelec, 'video']
         const favoriSelec = (req.body.favoriFiltre)?[true]:[true, false]
-        if (req.body.filtre === 'sans') {
-            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias ');
-            listeMedias = await mediaBDD.find({type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)
-        }
-        else if (req.body.filtre === 'avecTag') {
-            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias qui ont au moins 1 tag');
-            listeMedias = await mediaBDD.find({'tags.0': {$exists: true}, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)          
-        }
-        else if (req.body.filtre === 'sansTag') {
-            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias qui n\'ont pas de tags');
-            listeMedias = await mediaBDD.find({'tags.0': {$exists: false}, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)          
-        }
-        else if (req.body.filtre === 'nonVu') {
-            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias qui n\'ont pas été vus');
-            listeMedias = await mediaBDD.find({nbUtilisation: -1, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)         
-        }
-        else if (req.body.filtre === 'sourceInconnue') {
-            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias à la source inconnue');
-            listeMedias = await mediaBDD.find({source: null, type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)
-        }
-        else if (req.body.filtre === 'sansNote') {
-            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias sans note');
-            listeMedias = await mediaBDD.find({$nor: [
-                {'notes.graphisme': {$ne: null}},
-                {'notes.animation': {$ne: null}},
-                {'notes.miseEnScene': {$ne: null}},
-                {'notes.son': {$ne: null}}
-            ], type: {$in: typeSelec}, favori: {$in: favoriSelec}}).sort(tri)
-        }
-        else if (req.body.filtre === 'filtre') {
-            console.log('Requête reçue: envoi de '+req.body.nbImages+' médias selon un filtre des tags');
-            let filtre = []
-            for (let index = 0; index < req.body.tagsFiltres.length; index++) {
-                const nomTag = req.body.tagsFiltres[index];
-                const tag = await tagBDD.findOne({nom: nomTag})
-                filtre.push(tag._id.toHexString())           
+        //condition commune : types + favoris, complétée par l'axe source puis la pastille choisie
+        let condition = {type: {$in: typeSelec}, favori: {$in: favoriSelec}}
+        const sourceSelec = (req.body.sourceSelec !== undefined)?assainir.texte(req.body.sourceSelec):null
+        if (sourceSelec === 'inconnue') condition.source = null
+        else if (sourceSelec !== null && sourceSelec !== 'toutes') condition.source = sourceSelec
+        switch (req.body.filtre) {
+            case 'sans':
+                console.log('Requête reçue: envoi de '+req.body.nbImages+' médias');
+                break;
+            case 'sansTag':
+                console.log('Requête reçue: envoi de '+req.body.nbImages+' médias qui n\'ont pas de tags');
+                condition['tags.0'] = {$exists: false};
+                break;
+            case 'nonVu':
+                console.log('Requête reçue: envoi de '+req.body.nbImages+' médias qui n\'ont pas été vus');
+                condition.nbUtilisation = -1;
+                break;
+            case 'sansNote':
+                console.log('Requête reçue: envoi de '+req.body.nbImages+' médias sans note');
+                condition.$nor = [
+                    {'notes.graphisme': {$ne: null}},
+                    {'notes.animation': {$ne: null}},
+                    {'notes.miseEnScene': {$ne: null}},
+                    {'notes.son': {$ne: null}}
+                ];
+                break;
+            case 'filtre': {
+                console.log('Requête reçue: envoi de '+req.body.nbImages+' médias selon un filtre des tags');
+                let filtre = []
+                for (let index = 0; index < req.body.tagsFiltres.length; index++) {
+                    const nomTag = req.body.tagsFiltres[index];
+                    const tag = await tagBDD.findOne({nom: nomTag})
+                    filtre.push(tag._id.toHexString())
+                }
+                condition['tags.0'] = {$exists: true}
+                condition.tags = {$all: filtre}
+                break;
             }
-            const requete = {'tags.0': {$exists: true}, tags: {$all: filtre}, type: {$in: typeSelec}, favori: {$in: favoriSelec}}
-            listeMedias = await mediaBDD.find(requete).sort(tri)
+            default:
+                return res.status(400).json({message: 'filtre de sélection de médias non reconnu'})
         }
-        else res.status(400).json({message: 'filtre de sélection de médias non reconnu'})
+        const listeMedias = await mediaBDD.find(condition).sort(tri)
         const max = listeMedias.length
         const result = listeMedias.filter((elt, index) => index >= req.body.nbImages*req.body.page && index < req.body.nbImages*(req.body.page+1)).map((elt) => {
             return {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
