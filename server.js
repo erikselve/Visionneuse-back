@@ -68,4 +68,7 @@ app.get('/test', async (req, res) => {
 
 //lancement du serveur
 server.listen(process.env.PORT || 4000);
+//agent de nettoyage des fichiers temporaires
+const {demarreNettoyage} = require('./modules/nettoieTemp.js')
+demarreNettoyage()
 console.log('Serveur à l\'écoute sur le port : 4000');

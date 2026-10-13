@@ -1,3 +1,7 @@
+const PATH_PUBLIC = 'E:/visioneuse/public'
+const CHEMIN_TEMP_UPLOAD = PATH_PUBLIC + '/temp/'   //dépôts d'uploads avant sauvegarde — servis au front (comparateur), ne doit pas quitter PATH_PUBLIC
+const CHEMIN_TEMP_TRAVAIL = './temp'                //frames ffmpeg, couvertures — artefacts intermédiaires jamais servis
+
 module.exports = {
     SEUIL_IDENTICITE_IMAGE: 10, //distance de Hamming max (sur 64 bits) pour déclarer deux images « peut-être identiques »    INDICE_IDENTICITE_VIDEO: 5,
     SEUIL_IDENTICITE_VIDEO: 10, //distance de Hamming moyenne (par frame, sur 64 bits) pour déclarer deux vidéos « peut-être identiques »
@@ -18,13 +22,18 @@ module.exports = {
     // PATH_IMAGE: 'D:/visioneuse/public/images_traitees/',
     // PATH_VIDEO: 'D:/visioneuse/public/videos/',
     // PATH_ALBUM: 'D:/visioneuse/public/albums/',
-    PATH_PUBLIC: 'E:/visioneuse/public',
+    PATH_PUBLIC,
+    CHEMIN_TEMP_UPLOAD,
+    CHEMIN_TEMP_TRAVAIL,
+    AGE_MAX_TEMP: 2 * 60 * 60 * 1000, //âge maximum des fichiers dans temp/ (ms) — 2 h
+    PERIODE_NETTOYAGE_TEMP: 60 * 60 * 1000, //période entre deux nettoyages de temp/ (ms) — 1 h
     PATH_IMAGE: 'E:/visioneuse/public/images_traitees/',
     PATH_VIDEO: 'E:/visioneuse/public/videos/',
     PATH_ALBUM: 'E:/visioneuse/public/albums/',
     // PATH_IMAGE: './public/medias_surs/',
     // PATH_VIDEO: './public/medias_surs/',
     // PATH_ALBUM: './public/medias_surs/',
+    
     TAILLE_MAX: 8 * 1024 * 1024 * 1024, //taille maximale des fichiers uploadés sur le serveur
-    DUREE_MARQUE_MODIF: 24 * 60 * 60 * 1000 //durée de vie de la marque « récemment modifié » d'un média (ms) — 24 h
+    DUREE_MARQUE_MODIF: 24 * 60 * 60 * 1000, //durée de vie de la marque « récemment modifié » d'un média (ms) — 24 h
 }

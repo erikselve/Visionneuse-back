@@ -10,14 +10,9 @@ async function sauvegarde(fichier) {
         fs.renameSync(PATH_PUBLIC+'/temp/'+fichier.file.originalname, PATH_VIDEO+nouveauNom)
         const vidRecue = new mediaBDD({name: nouveauNom, taille: fichier.taille, hash: fichier.hash, type: 'video', nbUtilisation: -1, tags: fichier.tags, favori: false, source: fichier.source})
         await vidRecue.save()
-        fs.renameSync('./temp/instant_1.jpg', './temp/toto.jpg')
-        if (fs.existsSync('./temp/instant_2.jpg'))
-            fs.renameSync('./temp/instant_2.jpg', './temp/toto.jpg')
-        if (fs.existsSync('./temp/instant_3.jpg'))
-            fs.renameSync('./temp/instant_3.jpg', './temp/toto.jpg')
-        // fs.unlinkSync('./temp/instant_2.jpg')
-        // fs.unlinkSync('./temp/instant_3.jpg')
-        // fs.unlinkSync('./temp/temp.jpg')
+        for (let i = 1; i <= 3; i++)
+            fs.promises.unlink('./temp/instant_' + i + '.jpg').catch(() => {})
+
         console.log('nouvelle vidéo créée: '+nouveauNom);
     }
     catch(error) {
