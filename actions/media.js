@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
 const { consomme } = require('../modules/mediaEnAttente.js')
@@ -7,7 +8,7 @@ const { sauvegarde, supprime } = require('../modules/traitementImages.js')
 const { sauvegardeVideo, supprimeVideo } = require('../modules/traitementVideo.js')
 const { sauvegardeAlbum, supprimeAlbum } = require('../modules/traitementAlbum.js')
 const fs = require('fs');
-const {DUREE_MARQUE_MODIF, CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
+const {DUREE_MARQUE_MODIF, CHEMIN_TEMP_UPLOAD, DUREE_MARQUE_AJOUT} = require('../data/config.js')
 
 exports.filtreMedias = async (req, res) => {
     try{
@@ -60,6 +61,10 @@ exports.filtreMedias = async (req, res) => {
                 console.log('Requête reçue: envoi de '+req.body.nbImages+' médias récemment modifiés');
                 condition.derniereModif = {$gte: new Date(Date.now() - DUREE_MARQUE_MODIF)};
                 break;
+            case 'ajouteRecent':
+                console.log('Requête reçue: envoi de '+req.body.nbImages+' médias récemment ajoutés');
+                condition._id = {$gte: new mongoose.Types.ObjectId(Math.floor((Date.now() - DUREE_MARQUE_AJOUT)/1000))};
+                break;            
             default:
                 return res.status(400).json({message: 'filtre de sélection de médias non reconnu'})
         }

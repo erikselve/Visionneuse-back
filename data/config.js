@@ -36,4 +36,5 @@ module.exports = {
     
     TAILLE_MAX: 8 * 1024 * 1024 * 1024, //taille maximale des fichiers uploadés sur le serveur
     DUREE_MARQUE_MODIF: 24 * 60 * 60 * 1000, //durée de vie de la marque « récemment modifié » d'un média (ms) — 24 h
+    DUREE_MARQUE_AJOUT: 7 * 24 * 60 * 60 * 1000, //fenêtre du filtre « récemment ajoutés » (ms) — 7 jours
 }
