@@ -5,8 +5,10 @@ const fs = require('fs')
 const ffmpeg = require('ffmpeg')
 const sharp = require('sharp')
 const {getNomTags} = require('./tag.js')
-const { sauvegardeVideo, supprimeVideo, minisIdentiquesVideo} = require('../modules/traitementVideo.js')
-const {PATH_PUBLIC} = require('../data/config.js')
+const { sauvegardeVideo, supprimeVideo } = require('../modules/traitementVideo.js')
+const {extraitFrame} = require('../modules/extractionFrames.js')
+const {calculeHash, distanceHash} = require('../modules/hashImage.js')
+const {PATH_PUBLIC, SEUIL_IDENTICITE_VIDEO} = require('../data/config.js')
 
 exports.upload = async (req, res) => {
     try {
@@ -18,42 +20,39 @@ exports.upload = async (req, res) => {
             return res.status(400).json({message: 'Nom de fichier invalide'})
         }
         fs.writeFileSync(PATH_PUBLIC+'/temp/'+req.file.originalname, req.file.buffer)
-        const listeVideosBDD = await mediaBDD.find({type: 'video'})
 
-            const nouvelleVideo = await new ffmpeg(PATH_PUBLIC+'/temp/'+req.file.originalname)
-            //pour l'instant ne fait plus que 1 capture pour la couverture et ne fait plus les tests pour vérifier l'unicité de la vidéo
-            // await nouvelleVideo.fnExtractFrameToJPG('./temp', {number: 3, every_n_percentage: 30, file_name: 'instant.jpg'})
-            await nouvelleVideo.fnExtractFrameToJPG('./temp', {number: 1, every_n_percentage: 30, file_name: 'instant.jpg'})
-            let couverture = null
-            if (fs.existsSync('./temp/instant_2.jpg'))
-                couverture = await sharp('./temp/instant_2.jpg').jpeg().toFile(('./temp/temp.jpg'))
-            else
-                couverture = await sharp('./temp/instant_1.jpg').jpeg().toFile(('./temp/temp.jpg'))
-            let mini = null
-            if (fs.existsSync('./temp/instant_2.jpg') && fs.existsSync('./temp/instant_3.jpg')) {
-                const miniTemp = await sharp('./temp/instant_2.jpg').resize({width: 10, height:10}).toBuffer()
-                const miniTemp2 = await sharp('./temp/instant_3.jpg').resize({width: 10, height:10}).toBuffer()
-                mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).extend({right: 20}).composite([{input: miniTemp, left: 10, top: 0}, {input: miniTemp2, left: 20, top: 0}]).toBuffer()    
+        const nouvelleVideo = await new ffmpeg(PATH_PUBLIC+'/temp/'+req.file.originalname)
+        const duree = nouvelleVideo.metadata.duration.seconds
+        const hashConcat = Buffer.alloc(24)
+        for (let i = 0; i < 3; i++) {
+            await extraitFrame(PATH_PUBLIC+'/temp/'+req.file.originalname, duree*[0.3, 0.6, 0.9][i], './temp/instant_'+(i+1)+'.jpg')
+            const hash = await calculeHash('./temp/instant_'+(i+1)+'.jpg')
+            hash.copy(hashConcat, i*8)
+        }
+        let couverture = null
+        if (fs.existsSync('./temp/instant_2.jpg'))
+            couverture = await sharp('./temp/instant_2.jpg').jpeg().toFile(('./temp/temp.jpg'))
+        else
+            couverture = await sharp('./temp/instant_1.jpg').jpeg().toFile(('./temp/temp.jpg'))
+        
+        enregistre({file: req.file, hash: hashConcat, taille: {width: couverture.width, height: couverture.height, duree: duree}, source: req.body.source})
+        let unicite = true
+        let aVerifier = []
+        const listeVideos = await mediaBDD.find({type: 'video'}).select('name taille tags hash')
+        for (const video of listeVideos) {
+            if (video.hash === undefined || video.hash.length !== 24) continue   //vidéo pas encore migrée : invisible au filtre
+            let somme = 0
+            for (let i = 0; i < 3; i++) somme += distanceHash(hashConcat.slice(i*8, i*8+8), video.hash.slice(i*8, i*8+8))
+            if (somme/3 <= SEUIL_IDENTICITE_VIDEO) {
+                unicite = false
+                aVerifier.push({nom: video.name, taille: video.taille, tags: await getNomTags(video.tags), tagsID: video.tags})
             }
-            else {
-                const miniTemp = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).toBuffer()
-                mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).extend({right: 20}).composite([{input: miniTemp, left: 10, top: 0}, {input: miniTemp, left: 20, top: 0}]).toBuffer()    
-            }
-            
-            enregistre({file: req.file, mini: mini, taille: {width: couverture.width, height: couverture.height, duree: nouvelleVideo.metadata.duration.seconds}, source: req.body.source})
-            let unicite = true
-            let aVerifier = []
-            // for (const video of listeVideosBDD) {
-            //     if (minisIdentiquesVideo(mini, video.miniatureBuffer)) {
-            //         unicite = false
-            //         aVerifier.push({nom: video.name, taille: video.taille, tags: await getNomTags(video.tags), tagsID: video.tags})
-            //     }
-            // }
-            if (unicite) {
-                const mediaRecu = consomme()
-                sauvegardeVideo(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'}))
-            }
-            else res.status(300).json({listeVerif: aVerifier, taille:{width: couverture.width, height: couverture.height}, nouveauNom: req.file.originalname, message: 'Des images sont peut-être identiques, confirmation nécessaire'})
+        }
+        if (unicite) {
+            const mediaRecu = consomme()
+            sauvegardeVideo(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'}))
+        }
+        else res.status(300).json({listeVerif: aVerifier, taille:{width: couverture.width, height: couverture.height}, nouveauNom: req.file.originalname, message: 'Des images sont peut-être identiques, confirmation nécessaire'})
     }
     catch (error) {
         console.log(error)
@@ -72,15 +71,19 @@ exports.uploadLocal = async (req, res) => {
     }
     fs.renameSync('./temp/'+ancienTitre, PATH_PUBLIC+'/temp/'+req.body.titre)
     const nouvelleVideo = await new ffmpeg(PATH_PUBLIC+'/temp/'+req.body.titre)
-    // await nouvelleVideo.fnExtractFrameToJPG('./temp', {number: 3, every_n_percentage: 30, file_name: 'instant.jpg'})
-    await nouvelleVideo.fnExtractFrameToJPG('./temp', {number: 1, every_n_percentage: 30, file_name: 'instant.jpg'})
-    // const couverture = await sharp('./temp/instant_2.jpg').jpeg().toFile(('./temp/temp.jpg'))
-    const couverture = await sharp('./temp/instant_1.jpg').jpeg().toFile(('./temp/temp.jpg'))
-    // const miniTemp = await sharp('./temp/instant_2.jpg').resize({width: 10, height:10}).toBuffer()
-    // const miniTemp2 = await sharp('./temp/instant_3.jpg').resize({width: 10, height:10}).toBuffer()
-    // const mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).extend({right: 20}).composite([{input: miniTemp, left: 10, top: 0}, {input: miniTemp2, left: 20, top: 0}]).toBuffer()
-    const mini = await sharp('./temp/instant_1.jpg').resize({width: 10, height:10}).toBuffer()
-    sauvegardeVideo({file: {originalname: req.body.titre}, mini: mini, taille: {width: couverture.width, height: couverture.height}}).then(() => res.status(200).json({message: 'Bien reçu'}))
+    const duree = nouvelleVideo.metadata.duration.seconds
+    const hashConcat = Buffer.alloc(24)
+    for (let i = 0; i < 3; i++) {
+        await extraitFrame(PATH_PUBLIC+'/temp/'+req.file.originalname, duree*[0.3, 0.6, 0.9][i], './temp/instant_'+(i+1)+'.jpg')
+        const hash = await calculeHash('./temp/instant_'+(i+1)+'.jpg')
+        hash.copy(hashConcat, i*8)
+    }
+    let couverture = null
+    if (fs.existsSync('./temp/instant_2.jpg'))
+        couverture = await sharp('./temp/instant_2.jpg').jpeg().toFile(('./temp/temp.jpg'))
+    else
+        couverture = await sharp('./temp/instant_1.jpg').jpeg().toFile(('./temp/temp.jpg'))
+    sauvegardeVideo({file: {originalname: req.body.titre}, hash: hashConcat, taille: {width: couverture.width, height: couverture.height}}).then(() => res.status(200).json({message: 'Bien reçu'}))
 }
 
 exports.supprime = (req, res) => {

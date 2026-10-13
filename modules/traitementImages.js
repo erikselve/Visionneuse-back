@@ -1,20 +1,6 @@
-const sharp = require('sharp');
 const fs = require('fs');
 const mediaBDD = require('../models/media.js')
-const {PRECISION_COMPARATIF_MEDIA, INDICE_IDENTICITE_IMAGE, PATH_IMAGE, PATH_PUBLIC} = require('../data/config.js')
-
-function minisIdentiques(elt1, elt2) {
-    let index = 0
-    let nbDiff = 0
-
-    while ((nbDiff < PRECISION_COMPARATIF_MEDIA) && (index*3 < elt1.length) && (index <= 100-PRECISION_COMPARATIF_MEDIA)) {
-        if ((Math.abs(elt1[index*3] - elt2[index*3]) > INDICE_IDENTICITE_IMAGE) || (Math.abs(elt1[index*3+1] - elt2[index*3+1]) > INDICE_IDENTICITE_IMAGE) || (Math.abs(elt1[index*3+2] - elt2[index*3+2]) > INDICE_IDENTICITE_IMAGE))
-            nbDiff++
-        index++
-    }
-    if (nbDiff < PRECISION_COMPARATIF_MEDIA) return true
-    else return false
-}
+const {PATH_IMAGE, PATH_PUBLIC} = require('../data/config.js')
 
 async function sauvegarde(fichier) {
     try {
@@ -37,7 +23,6 @@ async function supprime(fichier) {
 }
 
 module.exports = {
-    minisIdentiques: minisIdentiques,
     sauvegarde:  sauvegarde,
     supprime: supprime
 }

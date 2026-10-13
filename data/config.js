@@ -1,6 +1,6 @@
 module.exports = {
-    PRECISION_COMPARATIF_MEDIA: 35,
     SEUIL_IDENTICITE_IMAGE: 10, //distance de Hamming max (sur 64 bits) pour déclarer deux images « peut-être identiques »    INDICE_IDENTICITE_VIDEO: 5,
+    SEUIL_IDENTICITE_VIDEO: 10, //distance de Hamming moyenne (par frame, sur 64 bits) pour déclarer deux vidéos « peut-être identiques »
     // 0 bit = fichiers identiques ; 1-6 = quasi-doublons (recompression, regrade léger) ; 
     // >10 = probablement distincts. Le seuil 10/64 est la valeur de pratique courante — et votre flux à confirmation humaine pardonne 
     // l'excès de zèle. Si les tests montrent trop de candidats sans intérêt, on descend ; des doublons manqués, on monte.
