@@ -66,11 +66,8 @@ exports.filtreMedias = async (req, res) => {
         const listeMedias = await mediaBDD.find(condition).sort(tri)
         const max = listeMedias.length
         const pageMedias = listeMedias.filter((elt, index) => index >= req.body.nbImages*req.body.page && index < req.body.nbImages*(req.body.page+1))
-        const result = pageMedias.map((elt, index) => {
-            const media = {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
-            if (index > 0) media.prec = index-1
-            if (index < pageMedias.length-1) media.suiv = index+1
-            return media
+        const result = pageMedias.map((elt) => {
+            return {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
         })
         res.status(200).json({res: result, max: max})
     }
