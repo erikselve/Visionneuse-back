@@ -23,9 +23,7 @@ function nettoieUneFois(cheminTemp) {
             catch (e) {}   //fichier disparu entre readdir et stat : la course nous est favorable
         }
     }
-    if (supprimes > 0) console.log('Nettoyage: ' + supprimes + ' fichiers expirés dans ' + cheminTemp)
-    else console.log('Rien à supprimer dans ' +cheminTemp);
-    
+    if (supprimes > 0) console.log('Nettoyage: ' + supprimes + ' fichiers expirés dans ' + cheminTemp)    
 }
 
 // balayage périodique — setInterval déclenché au démarrage du serveur

@@ -26,14 +26,11 @@ exports.upload = async (req, res) => {
         const hashConcat = Buffer.alloc(24)
         for (let i = 0; i < 3; i++) {
             await extraitFrame(CHEMIN_TEMP_UPLOAD+req.file.originalname, duree*[0.3, 0.6, 0.9][i], CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
-            const hash = await calculeHash(CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
+            const hash = await calculeHash(fs.readFileSync(CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg'))
             hash.copy(hashConcat, i*8)
         }
-        let couverture = null
-        if (fs.existsSync(CHEMIN_TEMP_TRAVAIL+'/instant_2.jpg'))
-            couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_2.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
-        else
-            couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_1.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
+        const imageCouverture = fs.existsSync('./temp/instant_2.jpg') ? fs.readFileSync('./temp/instant_2.jpg') : fs.readFileSync('./temp/instant_1.jpg')
+        const couverture = await sharp(imageCouverture).jpeg().toFile('./temp/temp.jpg')
         
         enregistre({file: req.file, hash: hashConcat, taille: {width: couverture.width, height: couverture.height, duree: duree}, source: req.body.source})
         let unicite = true
@@ -52,10 +49,16 @@ exports.upload = async (req, res) => {
             const mediaRecu = consomme()
             sauvegardeVideo(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'}))
         }
-        else res.status(300).json({listeVerif: aVerifier, taille:{width: couverture.width, height: couverture.height}, nouveauNom: req.file.originalname, message: 'Des images sont peut-être identiques, confirmation nécessaire'})
+        else {
+            for (let i = 1; i <= 3; i++)
+                fs.promises.unlink('./temp/instant_' + i + '.jpg').catch(() => {})
+            res.status(300).json({listeVerif: aVerifier, taille:{width: couverture.width, height: couverture.height}, nouveauNom: req.file.originalname, message: 'Des images sont peut-être identiques, confirmation nécessaire'})
+        }
     }
     catch (error) {
         console.log(error)
+        for (let i = 1; i <= 3; i++)
+            fs.promises.unlink('./temp/instant_' + i + '.jpg').catch(() => {})
         res.status(400).json({message: 'problème pendant l\'upload'})
     }
 }
@@ -75,7 +78,7 @@ exports.uploadLocal = async (req, res) => {
     const hashConcat = Buffer.alloc(24)
     for (let i = 0; i < 3; i++) {
         await extraitFrame(CHEMIN_TEMP_UPLOAD+req.file.originalname, duree*[0.3, 0.6, 0.9][i], CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
-        const hash = await calculeHash(CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
+        const hash = await calculeHash(fs.readFileSync(CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg'))
         hash.copy(hashConcat, i*8)
     }
     let couverture = null
@@ -83,6 +86,8 @@ exports.uploadLocal = async (req, res) => {
         couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_2.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
     else
         couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_1.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
+    for (let i = 1; i <= 3; i++)
+        fs.promises.unlink('./temp/instant_' + i + '.jpg').catch(() => {})
     sauvegardeVideo({file: {originalname: req.body.titre}, hash: hashConcat, taille: {width: couverture.width, height: couverture.height}}).then(() => res.status(200).json({message: 'Bien reçu'}))
 }
 
