@@ -8,7 +8,7 @@ const fs = require('fs')
 const sharp = require('sharp')
 const {getNomTags} = require('./tag.js')
 const { sauvegardeAlbum, supprimeAlbum, formatNomChiffre} = require('../modules/traitementAlbum.js')
-const {PATH_PUBLIC} = require('../data/config.js')
+const {CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
 
 exports.getAlbum = async (req, res) => {
     try {
@@ -29,16 +29,16 @@ exports.upload = async (req, res) => {
         }
         if (!Array.isArray(req.body.tome)) req.body.tome = [req.body.tome]
         const tailleTome = req.body.tome.map(elt => parseInt(elt))
-        fs.mkdirSync(PATH_PUBLIC+'/temp/'+req.body.nom)
+        fs.mkdirSync(CHEMIN_TEMP_UPLOAD+req.body.nom)
         let indexFiles = 0
         for (let numtome = 0; numtome < tailleTome.length; numtome++) {
             const taille = tailleTome[numtome];
             const tome = formatNomChiffre((numtome+1).toString())
-            fs.mkdirSync(PATH_PUBLIC+'/temp/'+req.body.nom+'/'+tome)
+            fs.mkdirSync(CHEMIN_TEMP_UPLOAD+req.body.nom+'/'+tome)
             for(let index=0; index < taille; index++) {
                 // const page = formatNomChiffre(req.files[indexFiles].originalname.split('.')[0])
                 const page = formatNomChiffre((index+1).toString())
-                await sharp(req.files[indexFiles].buffer).jpeg().toFile(PATH_PUBLIC+'/temp/'+req.body.nom+'/'+tome+'/'+page+'.jpg')
+                await sharp(req.files[indexFiles].buffer).jpeg().toFile(CHEMIN_TEMP_UPLOAD+req.body.nom+'/'+tome+'/'+page+'.jpg')
                 indexFiles++
             } 
         }
@@ -110,7 +110,7 @@ exports.parse8muses = async (req, res) => {
         const infos = req.body.info.split('/')
         const titre = infos[infos.length-1].replaceAll('-', ' ')
         const urlSource = url + '/comics/album/' + req.body.info
-        const destination = PATH_PUBLIC+'/temp/'+titre
+        const destination = CHEMIN_TEMP_UPLOAD+titre
         if (!fs.existsSync(destination)) fs.mkdirSync(destination)
 
         let liste = []

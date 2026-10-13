@@ -3,8 +3,8 @@ const assainir = require('../modules/assainissement.js')
 const {enregistre, consomme} = require('../modules/mediaEnAttente.js')
 const sharp = require('sharp')
 const {getNomTags} = require('./tag.js')
-const {minisIdentiques, sauvegarde, supprime} = require('../modules/traitementImages.js')
-const {PATH_PUBLIC} = require('../data/config.js')
+const {sauvegarde, supprime} = require('../modules/traitementImages.js')
+const {CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
 const {calculeHash, hashIdentiques} = require('../modules/hashImage.js')
 
 exports.upload = async (req, res) => {
@@ -18,8 +18,8 @@ exports.upload = async (req, res) => {
         console.log('Requête reçue: réception d\'une nouvelle image à traiter: '+req.file.originalname);
         const format = req.file.mimetype.split('/')[1]
         const hashActuel = await calculeHash(req.file.buffer)
-        const imageTemp = ((format !== 'gif') && (format !== 'webp'))?await sharp(req.file.buffer).toFile(PATH_PUBLIC+'/temp/'+req.file.originalname):await sharp(req.file.buffer, {animated: true}).gif({loop: 0}).toFile(PATH_PUBLIC+'/temp/'+req.file.originalname)
-        const metadata = await sharp(PATH_PUBLIC+'/temp/'+req.file.originalname).metadata()
+        const imageTemp = ((format !== 'gif') && (format !== 'webp'))?await sharp(req.file.buffer).toFile(CHEMIN_TEMP_UPLOAD+req.file.originalname):await sharp(req.file.buffer, {animated: true}).gif({loop: 0}).toFile(CHEMIN_TEMP_UPLOAD+req.file.originalname)
+        const metadata = await sharp(CHEMIN_TEMP_UPLOAD+req.file.originalname).metadata()
         enregistre({file: req.file, hash: hashActuel, taille: {width: metadata.width, height: metadata.height, source: req.body.source}})
         let unicite = true
         let aVerifier = []

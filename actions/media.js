@@ -2,12 +2,12 @@ const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
 const { consomme } = require('../modules/mediaEnAttente.js')
 const tagBDD = require('../models/tag.js')
-const { getNomTags, getTagID, incrementeTag, decrementeTag } = require('./tag.js')
+const { getNomTags, incrementeTag, decrementeTag } = require('./tag.js')
 const { sauvegarde, supprime } = require('../modules/traitementImages.js')
 const { sauvegardeVideo, supprimeVideo } = require('../modules/traitementVideo.js')
 const { sauvegardeAlbum, supprimeAlbum } = require('../modules/traitementAlbum.js')
 const fs = require('fs');
-const {PATH_PUBLIC, DUREE_MARQUE_MODIF} = require('../data/config.js')
+const {DUREE_MARQUE_MODIF, CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
 
 exports.filtreMedias = async (req, res) => {
     try{
@@ -122,7 +122,7 @@ exports.retireDouble = async (req, res) => {
             else
                 sauvegarde(mediaRecu)
         }
-        else fs.promises.unlink(PATH_PUBLIC+'/temp/'+mediaRecu.file.originalname)
+        else fs.promises.unlink(CHEMIN_TEMP_UPLOAD+mediaRecu.file.originalname)
             .catch(() => console.log('Nettoyage: fichier temporaire '+mediaRecu.file.originalname+' pas supprimable (encore ouvert ?) — ignoré'))
         for (let index = 0; index < req.body.liste.length; index++) {
             const element = assainir.fragChemin(req.body.liste[index])

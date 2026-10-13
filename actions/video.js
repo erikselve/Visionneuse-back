@@ -8,7 +8,7 @@ const {getNomTags} = require('./tag.js')
 const { sauvegardeVideo, supprimeVideo } = require('../modules/traitementVideo.js')
 const {extraitFrame} = require('../modules/extractionFrames.js')
 const {calculeHash, distanceHash} = require('../modules/hashImage.js')
-const {PATH_PUBLIC, SEUIL_IDENTICITE_VIDEO} = require('../data/config.js')
+const {SEUIL_IDENTICITE_VIDEO, CHEMIN_TEMP_UPLOAD, CHEMIN_TEMP_TRAVAIL} = require('../data/config.js')
 
 exports.upload = async (req, res) => {
     try {
@@ -19,21 +19,21 @@ exports.upload = async (req, res) => {
         if (assainir.fragChemin(req.file.originalname) === null) {
             return res.status(400).json({message: 'Nom de fichier invalide'})
         }
-        fs.writeFileSync(PATH_PUBLIC+'/temp/'+req.file.originalname, req.file.buffer)
+        fs.writeFileSync(CHEMIN_TEMP_UPLOAD+req.file.originalname, req.file.buffer)
 
-        const nouvelleVideo = await new ffmpeg(PATH_PUBLIC+'/temp/'+req.file.originalname)
+        const nouvelleVideo = await new ffmpeg(CHEMIN_TEMP_UPLOAD+req.file.originalname)
         const duree = nouvelleVideo.metadata.duration.seconds
         const hashConcat = Buffer.alloc(24)
         for (let i = 0; i < 3; i++) {
-            await extraitFrame(PATH_PUBLIC+'/temp/'+req.file.originalname, duree*[0.3, 0.6, 0.9][i], './temp/instant_'+(i+1)+'.jpg')
-            const hash = await calculeHash('./temp/instant_'+(i+1)+'.jpg')
+            await extraitFrame(CHEMIN_TEMP_UPLOAD+req.file.originalname, duree*[0.3, 0.6, 0.9][i], CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
+            const hash = await calculeHash(CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
             hash.copy(hashConcat, i*8)
         }
         let couverture = null
-        if (fs.existsSync('./temp/instant_2.jpg'))
-            couverture = await sharp('./temp/instant_2.jpg').jpeg().toFile(('./temp/temp.jpg'))
+        if (fs.existsSync(CHEMIN_TEMP_TRAVAIL+'/instant_2.jpg'))
+            couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_2.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
         else
-            couverture = await sharp('./temp/instant_1.jpg').jpeg().toFile(('./temp/temp.jpg'))
+            couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_1.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
         
         enregistre({file: req.file, hash: hashConcat, taille: {width: couverture.width, height: couverture.height, duree: duree}, source: req.body.source})
         let unicite = true
@@ -69,20 +69,20 @@ exports.uploadLocal = async (req, res) => {
     if (assainir.fragChemin(req.body.titre) === null) {
         return res.status(400).json({message: 'Titre invalide'})
     }
-    fs.renameSync('./temp/'+ancienTitre, PATH_PUBLIC+'/temp/'+req.body.titre)
-    const nouvelleVideo = await new ffmpeg(PATH_PUBLIC+'/temp/'+req.body.titre)
+    fs.renameSync(CHEMIN_TEMP_TRAVAIL+'/'+ancienTitre, CHEMIN_TEMP_UPLOAD+req.body.titre)
+    const nouvelleVideo = await new ffmpeg(CHEMIN_TEMP_UPLOAD+req.body.titre)
     const duree = nouvelleVideo.metadata.duration.seconds
     const hashConcat = Buffer.alloc(24)
     for (let i = 0; i < 3; i++) {
-        await extraitFrame(PATH_PUBLIC+'/temp/'+req.file.originalname, duree*[0.3, 0.6, 0.9][i], './temp/instant_'+(i+1)+'.jpg')
-        const hash = await calculeHash('./temp/instant_'+(i+1)+'.jpg')
+        await extraitFrame(CHEMIN_TEMP_UPLOAD+req.file.originalname, duree*[0.3, 0.6, 0.9][i], CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
+        const hash = await calculeHash(CHEMIN_TEMP_TRAVAIL+'/instant_'+(i+1)+'.jpg')
         hash.copy(hashConcat, i*8)
     }
     let couverture = null
-    if (fs.existsSync('./temp/instant_2.jpg'))
-        couverture = await sharp('./temp/instant_2.jpg').jpeg().toFile(('./temp/temp.jpg'))
+    if (fs.existsSync(CHEMIN_TEMP_TRAVAIL+'/instant_2.jpg'))
+        couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_2.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
     else
-        couverture = await sharp('./temp/instant_1.jpg').jpeg().toFile(('./temp/temp.jpg'))
+        couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_1.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
     sauvegardeVideo({file: {originalname: req.body.titre}, hash: hashConcat, taille: {width: couverture.width, height: couverture.height}}).then(() => res.status(200).json({message: 'Bien reçu'}))
 }
 
