@@ -42,7 +42,7 @@ exports.upload = async (req, res) => {
             for (let i = 0; i < 3; i++) somme += distanceHash(hashConcat.slice(i*8, i*8+8), video.hash.slice(i*8, i*8+8))
             if (somme/3 <= SEUIL_IDENTICITE_VIDEO) {
                 unicite = false
-                aVerifier.push({id: image._id, nom: image.name, taille: image.taille, tags: await getNomTags(image.tags), tagsID: image.tags})
+                aVerifier.push({id: video._id, nom: video.name, nomFichier: video.nomFichier, taille: video.taille, tags: await getNomTags(video.tags), tagsID: video.tags})
             }
         }
         if (unicite) {
@@ -97,5 +97,5 @@ exports.supprime = async (req, res) => {
     const media = await mediaBDD.findById(id)
     if (media === null) return res.status(400).json({message: 'Média introuvable'})
     console.log('Requête reçue: suppression de la vidéo '+media.name)
-    supprime(media.name).then(() => res.status(200).json({message: 'Fichier supprimé'}))
+    supprimeVideo(media.name).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }

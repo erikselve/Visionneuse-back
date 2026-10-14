@@ -160,7 +160,7 @@ exports.parse8muses = async (req, res) => {
         for (const album of listeMedias) {
             if (titre === album.name) {
                 unicite = false
-                aVerifier.push({id: album._id, nom: album.name, taille: album.taille})
+                aVerifier.push({id: album._id, nom: album.name, nomFichier: album.nomFichier, taille: album.taille})
             }
         }
         if (unicite) {

@@ -3,6 +3,7 @@ const fs = require('fs');
 const mediaBDD = require('../models/media.js');
 const sharp = require('sharp');
 const {PATH_ALBUM, PATH_PUBLIC} = require('../data/config.js')
+const genereNom = require('./genereNom.js')
 
 //change un nombre dans un string 'x' en '0000x' sur 5 caractères (il ne faut pas de nombre de plus de 5 caractères)
 function formatNomFichier(nombre) {
@@ -18,7 +19,7 @@ function formatNomFichier(nombre) {
 
 async function sauvegarde(fichier) {
     try {
-        const nouveauNom = Math.floor(Math.random()*100)+'-'+Date.now()+'-'+fichier.nom
+        const nouveauNom = await genereNom(fichier.file.originalname, PATH_ALBUM)
         fs.mkdirSync(PATH_ALBUM+nouveauNom)
         const couverture = await sharp(PATH_PUBLIC+'/temp/'+fichier.nom+'/00001/00001.jpg').metadata()
         for (let index = 0; index < fichier.taille.length; index++) {
@@ -32,7 +33,7 @@ async function sauvegarde(fichier) {
             fs.rmdirSync(PATH_PUBLIC+'/temp/'+fichier.nom+'/'+rep)
         }
         fs.rmdirSync(PATH_PUBLIC+'/temp/'+fichier.nom)
-        const albumRecu = new mediaBDD({name: nouveauNom, taille: {width: couverture.width, height: couverture.height, tomes: fichier.taille}, tags: fichier.tags, type: 'album', nbUtilisation: -1, favori: false, source: fichier.source})
+        const albumRecu = new mediaBDD({name: nouveauNom, nomFichier: nouveauNomm, taille: {width: couverture.width, height: couverture.height, tomes: fichier.taille}, tags: fichier.tags, type: 'album', nbUtilisation: -1, favori: false, source: fichier.source})
         await albumRecu.save()
         console.log('nouvel albul créé: '+nouveauNom);
     }
@@ -41,9 +42,9 @@ async function sauvegarde(fichier) {
     }
 }
 
-async function supprime(fichier) {
+async function supprime(fichier, id) {
     fs.rmSync(PATH_ALBUM+fichier, {recursive: true, force: true})
-    await mediaBDD.deleteOne({name: fichier})
+    await mediaBDD.deleteOne({_id: id})
 }
 
 module.exports = {

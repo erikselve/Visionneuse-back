@@ -27,7 +27,7 @@ exports.upload = async (req, res) => {
         for (const image of listeMedias) {
             if (image.hash !== undefined && hashIdentiques(hashActuel, image.hash)) {
                 unicite = false
-                aVerifier.push({id: image._id, nom: image.name, taille: image.taille, tags: await getNomTags(image.tags), tagsID: image.tags})
+                aVerifier.push({id: image._id, nom: image.name, nomFichier: image.nomFichier, taille: image.taille, tags: await getNomTags(image.tags), tagsID: image.tags})
             }
         }
         if (unicite) {

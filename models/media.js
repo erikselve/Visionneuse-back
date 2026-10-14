@@ -10,7 +10,8 @@ mongoose.connect('mongodb://'+URL_BDD+NOM_BASE);
 const Schema = mongoose.Schema;
 
 const mediaTraitee = new Schema({
-  name: String,
+  name: String,            // nom affiché (sans composante temporelle depuis le 14/10)
+  nomFichier: String,      // nom du fichier sur disque — figé à l'upload, sert aux URLs et suppressions
   taille: {width: Number, height: Number, tomes: [Number], duree: Number}, //width et height pour tous, tomes pour les albums, duree pour les videos
   miniatureBuffer: Buffer, //pour les images et videos
   hash: Buffer, // dHash 64 bits pour la comparaison d'images ; miniatureBuffer reste pour albums/vidéos

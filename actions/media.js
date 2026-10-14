@@ -72,7 +72,7 @@ exports.filtreMedias = async (req, res) => {
         const max = listeMedias.length
         const pageMedias = listeMedias.filter((elt, index) => index >= req.body.nbImages*req.body.page && index < req.body.nbImages*(req.body.page+1))
         const result = pageMedias.map((elt) => {
-            return {id: elt._id, name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
+            return {id: elt._id, name: elt.name, nomFichier: elt.nomFichier, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
         })
         res.status(200).json({res: result, max: max})
     }
@@ -105,7 +105,7 @@ exports.getMediaAleatoire = async (req, res) => {
     console.log('Requête reçue: envoyer une image aléatoire pour préparer le diaporama');
     const tirage = await (await mediaBDD.aggregate([{ $match: { type: 'image'}}]).sample(1)).pop()
     const tags = await getNomTags(tirage.tags)
-    res.status(200).json({id: tirage._id, name: tirage.name, tags: tags, taille: tirage.taille})
+    res.status(200).json({id: tirage._id, name: tirage.name, nomFichier: tirage.nomFichier, tags: tags, taille: tirage.taille})
 }
 
 exports.retireDouble = async (req, res) => {
@@ -204,7 +204,7 @@ exports.getMediaFavoriAleatoire = async (req, res) => {
         let media = await mediaBDD.findById(tirage._id)
         media.nbUtilisation = media.nbUtilisation+1
         media.save()
-        res.status(200).json({nom: media.name, type: media.type, taille: media.taille})
+        res.status(200).json({nom: media.name, nomFichier: tirage.nomFichier, type: media.type, taille: media.taille})
     } catch (error) {
         console.log(error);
         res.status(400).json({message: 'Impossible à effectuer'})
@@ -219,7 +219,7 @@ exports.getMediaFavoriCourtAleatoire = async (req, res) => {
         let media = await mediaBDD.findById(tirage._id)
         media.nbUtilisation = media.nbUtilisation+1
         media.save()
-        res.status(200).json({nom: media.name, type: media.type, taille: media.taille})
+        res.status(200).json({nom: media.name, nomFichier: tirage.nomFichier, type: media.type, taille: media.taille})
     } catch (error) {
         console.log(error)
         res.status(400).json({message: 'Impossible à effectuer'})
@@ -228,12 +228,10 @@ exports.getMediaFavoriCourtAleatoire = async (req, res) => {
 
 exports.changeSource = async (req, res) => {
     try {
-        const nom = assainir.texte(req.body.media)
-        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-        console.log('Requête reçue: associer la source '+req.body.source+' au média '+nom);
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
+        console.log('Requête reçue: associer la source '+req.body.source+' au média '+media.name);
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
         media.source = (req.body.source === 'Inconnu') ? null : req.body.source
         media.derniereModif = new Date()
