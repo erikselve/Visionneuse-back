@@ -72,7 +72,7 @@ exports.filtreMedias = async (req, res) => {
         const max = listeMedias.length
         const pageMedias = listeMedias.filter((elt, index) => index >= req.body.nbImages*req.body.page && index < req.body.nbImages*(req.body.page+1))
         const result = pageMedias.map((elt) => {
-            return {name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
+            return {id: elt._id, name: elt.name, taille: elt.taille, type: elt.type, favori: elt.favori, source: elt.source, notes: elt.notes}
         })
         res.status(200).json({res: result, max: max})
     }
@@ -87,7 +87,10 @@ exports.getTagsMedia = async (req, res) => {
         const nom = assainir.texte(req.body.nom)   // ou req.body.media selon l'action
         if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
         console.log('Requête reçue: envoie de la liste des tags associés au média '+nom);
-        const media = await mediaBDD.findOne({name: nom})
+        const id = assainir.id(req.body.id)
+        if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+        const media = await mediaBDD.findById(id)
+        if (media === null) return res.status(400).json({message: 'Média introuvable'})
         if (media.nbUtilisation === -1) {
             media.nbUtilisation = 0
             media.save()
@@ -104,7 +107,7 @@ exports.getMediaAleatoire = async (req, res) => {
     console.log('Requête reçue: envoyer une image aléatoire pour préparer le diaporama');
     const tirage = await (await mediaBDD.aggregate([{ $match: { type: 'image'}}]).sample(1)).pop()
     const tags = await getNomTags(tirage.tags)
-    res.status(200).json({name: tirage.name, tags: tags, taille: tirage.taille})
+    res.status(200).json({id: tirage._id, name: tirage.name, tags: tags, taille: tirage.taille})
 }
 
 exports.retireDouble = async (req, res) => {
@@ -127,14 +130,16 @@ exports.retireDouble = async (req, res) => {
         else fs.promises.unlink(CHEMIN_TEMP_UPLOAD+mediaRecu.file.originalname)
             .catch(() => console.log('Nettoyage: fichier temporaire '+mediaRecu.file.originalname+' pas supprimable (encore ouvert ?) — ignoré'))
         for (let index = 0; index < req.body.liste.length; index++) {
-            const element = assainir.fragChemin(req.body.liste[index])
-            if (element === null) continue   // entrée invalide : on l'ignore, on ne casse pas la requête
+            const id = assainir.id(req.body.liste[index])
+            if (id === null) continue   // entrée invalide : on l'ignore, on ne casse pas la requête
+            const media = await mediaBDD.findById(id)
+            if (media === null) continue
             if (req.body.typeMedia === 'video')
-                supprimeVideo(element)
+                supprimeVideo(media.name)
             else if (req.body.typeMedia === 'album')
-                supprimeAlbum(element)
+                supprimeAlbum(media.name)
             else
-                supprime(element)
+                supprime(media.name)
         }
         res.status(200).json({message: 'Médias supprimées'})
     }
@@ -149,7 +154,10 @@ exports.retireTag = async (req, res) => {
         const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
         if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
         console.log('Requête reçue: retirer le tag '+req.body.tag+' associé au média '+nom);
-        let media = await mediaBDD.findOne({name: nom})
+        const id = assainir.id(req.body.id)
+        if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+        const media = await mediaBDD.findById(id)
+        if (media === null) return res.status(400).json({message: 'Média introuvable'})
         const tag = await decrementeTag(req.body.tag)
         media.tags = media.tags.filter(elt => elt !== tag)
         media.derniereModif = new Date()
@@ -167,7 +175,10 @@ exports.ajouteTag = async (req, res) => {
         const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
         if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
         console.log('Requête reçue: associer le tag '+req.body.tag+' au média '+nom);
-        let media = await mediaBDD.findOne({name: nom})
+        const id = assainir.id(req.body.id)
+        if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+        const media = await mediaBDD.findById(id)
+        if (media === null) return res.status(400).json({message: 'Média introuvable'})
         const tag = await incrementeTag(req.body.tag)
         media.tags = [...media.tags, tag]
         media.derniereModif = new Date()
@@ -183,7 +194,10 @@ exports.ajouteTag = async (req, res) => {
 exports.changeFavori = async (req, res) => {
     const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
     if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-    const media = await mediaBDD.findOne({name: nom})
+    const id = assainir.id(req.body.id)
+    if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+    const media = await mediaBDD.findById(id)
+    if (media === null) return res.status(400).json({message: 'Média introuvable'})
     media.favori = !media.favori
     media.derniereModif = new Date()
     await media.save()
@@ -194,8 +208,8 @@ exports.getMediaFavoriAleatoire = async (req, res) => {
     try {
         console.log('Requête reçue: envoi d\'un média parmi les favoris')
         const min = await mediaBDD.aggregate([{$match: {favori: true}}, {$group: {_id: null, utilMin: {$min: "$nbUtilisation"}}}])
-        const tirage = await (await mediaBDD.aggregate([{ $match: { favori: true, nbUtilisation: min[0].utilMin}}, {$project: {name: 1}}]).sample(1)).pop()
-        let media = await mediaBDD.findOne({name: tirage.name})
+        const tirage = await (await mediaBDD.aggregate([{ $match: { favori: true, nbUtilisation: min[0].utilMin}}]).sample(1)).pop()
+        let media = await mediaBDD.findById(tirage._id)
         media.nbUtilisation = media.nbUtilisation+1
         media.save()
         res.status(200).json({nom: media.name, type: media.type, taille: media.taille})
@@ -209,8 +223,8 @@ exports.getMediaFavoriCourtAleatoire = async (req, res) => {
     try {
         console.log('Requête reçue: envoi d\'un média de courte durée parmi les favoris')
         const min = await mediaBDD.aggregate([{$match: {favori: true, "taille.duree": {$lte: 600}}}, {$group: {_id: null, utilMin: {$min: "$nbUtilisation"}}}])
-        const tirage = await (await mediaBDD.aggregate([{ $match: { favori: true, nbUtilisation: min[0].utilMin, "taille.duree": {$lte: 600}}}, {$project: {name: 1}}]).sample(1)).pop()
-        let media = await mediaBDD.findOne({name: tirage.name})
+        const tirage = await (await mediaBDD.aggregate([{ $match: { favori: true, nbUtilisation: min[0].utilMin, "taille.duree": {$lte: 600}}}]).sample(1)).pop()
+        let media = await mediaBDD.findById(tirage._id)
         media.nbUtilisation = media.nbUtilisation+1
         media.save()
         res.status(200).json({nom: media.name, type: media.type, taille: media.taille})
@@ -225,7 +239,10 @@ exports.changeSource = async (req, res) => {
         const nom = assainir.texte(req.body.media)
         if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
         console.log('Requête reçue: associer la source '+req.body.source+' au média '+nom);
-        let media = await mediaBDD.findOne({name: nom})
+        const id = assainir.id(req.body.id)
+        if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+        const media = await mediaBDD.findById(id)
+        if (media === null) return res.status(400).json({message: 'Média introuvable'})
         media.source = (req.body.source === 'Inconnu') ? null : req.body.source
         media.derniereModif = new Date()
         await media.save()
@@ -242,7 +259,10 @@ exports.changeNotes = async (req, res) => {
         const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
         if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
         console.log('Requête reçue: noter le média '+nom);
-        let media = await mediaBDD.findOne({name: nom})
+        const id = assainir.id(req.body.id)
+        if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+        const media = await mediaBDD.findById(id)
+        if (media === null) return res.status(400).json({message: 'Média introuvable'})
         media.notes = req.body.notes
         media.derniereModif = new Date()
         await media.save()

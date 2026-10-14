@@ -27,7 +27,7 @@ exports.upload = async (req, res) => {
         for (const image of listeMedias) {
             if (image.hash !== undefined && hashIdentiques(hashActuel, image.hash)) {
                 unicite = false
-                aVerifier.push({nom: image.name, taille: image.taille, tags: await getNomTags(image.tags), tagsID: image.tags})
+                aVerifier.push({id: image._id, nom: image.name, taille: image.taille, tags: await getNomTags(image.tags), tagsID: image.tags})
             }
         }
         if (unicite) {
@@ -42,10 +42,11 @@ exports.upload = async (req, res) => {
     }
 }
 
-exports.supprime = (req, res) => {
-    console.log('Requête reçue: suppression de l\'image '+req.body.name);
-    const nom = assainir.fragChemin(req.body.name)
-    if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-    supprime(nom)
-    res.status(200).json({message: 'Fichier supprimé'})
+exports.supprime = async (req, res) => {
+    const id = assainir.id(req.body.id)
+    if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+    const media = await mediaBDD.findById(id)
+    if (media === null) return res.status(400).json({message: 'Média introuvable'})
+    console.log('Requête reçue: suppression de l\'image '+media.name);
+    supprime(media.name).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }

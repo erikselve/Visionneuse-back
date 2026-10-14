@@ -12,8 +12,11 @@ const {CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
 
 exports.getAlbum = async (req, res) => {
     try {
-        console.log('Requête reçue: envoi du contenu de l\'album '+req.body.album);
-        const album = await mediaBDD.findOne({name: req.body.album})
+        const id = assainir.id(req.body.id)
+        if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+        const album = await mediaBDD.findById(id)
+        if (media === null) return res.status(400).json({message: 'Média introuvable'})
+        console.log('Requête reçue: envoi du contenu de l\'album '+album.name);
         res.status(200).json({res: album.taille.tomes})
     } catch (error) {
         console.log(error);
@@ -64,11 +67,13 @@ exports.upload = async (req, res) => {
     }
 }
 
-exports.supprime = (req, res) => {
-    console.log('Requête reçue: suppression de l\'album '+req.body.name);
-    const nom = assainir.fragChemin(req.body.name)
-    if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-    supprimeAlbum(nom).then(() => res.status(200).json({message: 'Album supprimé'}))
+exports.supprime = async (req, res) => {
+    const id = assainir.id(req.body.id)
+    if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
+    const media = await mediaBDD.findById(id)
+    if (media === null) return res.status(400).json({message: 'Média introuvable'})
+    console.log('Requête reçue: suppression de l\'album '+media.name);
+    supprimeAlbum(media.name).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }
 
 exports.parseErofus = (req, res) => {

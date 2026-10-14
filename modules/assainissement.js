@@ -27,3 +27,9 @@ exports.fragChemin = (valeur) => {
     if (texte.includes('..') || texte.includes('/') || texte.includes('\\')) return null
     return texte
 }
+
+// Identifiant de média (ObjectId Mongo) : 24 caractères hexadécimaux, sinon on refuse.
+exports.id = (valeur) => {
+    if (typeof valeur !== 'string' || !/^[0-9a-f]{24}$/.test(valeur)) return null
+    return valeur
+}
