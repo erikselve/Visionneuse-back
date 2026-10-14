@@ -35,7 +35,7 @@ exports.upload = async (req, res) => {
         enregistre({file: req.file, hash: hashConcat, taille: {width: couverture.width, height: couverture.height, duree: duree}, source: req.body.source})
         let unicite = true
         let aVerifier = []
-        const listeVideos = await mediaBDD.find({type: 'video'}).select('name taille tags hash')
+        const listeVideos = await mediaBDD.find({type: 'video'}).select('name nomFichier taille tags hash')
         for (const video of listeVideos) {
             if (video.hash === undefined || video.hash.length !== 24) continue   //vidéo pas encore migrée : invisible au filtre
             let somme = 0
@@ -97,5 +97,5 @@ exports.supprime = async (req, res) => {
     const media = await mediaBDD.findById(id)
     if (media === null) return res.status(400).json({message: 'Média introuvable'})
     console.log('Requête reçue: suppression de la vidéo '+media.name)
-    supprimeVideo(media.name).then(() => res.status(200).json({message: 'Fichier supprimé'}))
+    supprimeVideo(media.nomFichier, media._id).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }

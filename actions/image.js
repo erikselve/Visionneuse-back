@@ -23,7 +23,7 @@ exports.upload = async (req, res) => {
         enregistre({file: req.file, hash: hashActuel, taille: {width: metadata.width, height: metadata.height, source: req.body.source}})
         let unicite = true
         let aVerifier = []
-        const listeMedias = await mediaBDD.find({type: 'image'}).select('name taille tags hash')
+        const listeMedias = await mediaBDD.find({type: 'image'}).select('name nomFichier taille tags hash')
         for (const image of listeMedias) {
             if (image.hash !== undefined && hashIdentiques(hashActuel, image.hash)) {
                 unicite = false
@@ -48,5 +48,5 @@ exports.supprime = async (req, res) => {
     const media = await mediaBDD.findById(id)
     if (media === null) return res.status(400).json({message: 'Média introuvable'})
     console.log('Requête reçue: suppression de l\'image '+media.name);
-    supprime(media.name).then(() => res.status(200).json({message: 'Fichier supprimé'}))
+    supprime(media.nomFichier, media._id).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }

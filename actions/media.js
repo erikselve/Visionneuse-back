@@ -133,11 +133,11 @@ exports.retireDouble = async (req, res) => {
             const media = await mediaBDD.findById(id)
             if (media === null) continue
             if (req.body.typeMedia === 'video')
-                supprimeVideo(media.name)
+                supprimeVideo(media.nomFichier, media._id)
             else if (req.body.typeMedia === 'album')
-                supprimeAlbum(media.name)
+                supprimeAlbum(media.nomFichier, media._id)
             else
-                supprime(media.name)
+                supprime(media.nomFichier, media._id)
         }
         res.status(200).json({message: 'Médias supprimées'})
     }
