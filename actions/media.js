@@ -84,12 +84,10 @@ exports.filtreMedias = async (req, res) => {
 
 exports.getTagsMedia = async (req, res) => {
     try {
-        const nom = assainir.texte(req.body.nom)   // ou req.body.media selon l'action
-        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-        console.log('Requête reçue: envoie de la liste des tags associés au média '+nom);
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
+        console.log('Requête reçue: envoie de la liste des tags associés au média '+media.name);
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
         if (media.nbUtilisation === -1) {
             media.nbUtilisation = 0
@@ -151,13 +149,11 @@ exports.retireDouble = async (req, res) => {
 
 exports.retireTag = async (req, res) => {
     try{
-        const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
-        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-        console.log('Requête reçue: retirer le tag '+req.body.tag+' associé au média '+nom);
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
+        console.log('Requête reçue: retirer le tag '+req.body.tag+' associé au média '+media.name);
         const tag = await decrementeTag(req.body.tag)
         media.tags = media.tags.filter(elt => elt !== tag)
         media.derniereModif = new Date()
@@ -172,13 +168,11 @@ exports.retireTag = async (req, res) => {
 
 exports.ajouteTag = async (req, res) => {
     try{
-        const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
-        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-        console.log('Requête reçue: associer le tag '+req.body.tag+' au média '+nom);
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
+        console.log('Requête reçue: associer le tag '+req.body.tag+' au média '+media.name);
         const tag = await incrementeTag(req.body.tag)
         media.tags = [...media.tags, tag]
         media.derniereModif = new Date()
@@ -192,8 +186,6 @@ exports.ajouteTag = async (req, res) => {
 }
 
 exports.changeFavori = async (req, res) => {
-    const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
-    if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
     const id = assainir.id(req.body.id)
     if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
     const media = await mediaBDD.findById(id)
@@ -256,13 +248,11 @@ exports.changeSource = async (req, res) => {
 
 exports.changeNotes = async (req, res) => {
     try {
-        const nom = assainir.texte(req.body.media)   // ou req.body.media selon l'action
-        if (nom === null) return res.status(400).json({message: 'Nom de média invalide'})
-        console.log('Requête reçue: noter le média '+nom);
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
+        console.log('Requête reçue: noter le média '+media.name);
         media.notes = req.body.notes
         media.derniereModif = new Date()
         await media.save()

@@ -52,7 +52,7 @@ exports.upload = async (req, res) => {
         for (const album of listeMedias) {
             if (req.body.nom === album.name) {
                 unicite = false
-                aVerifier.push({nom: album.name, taille: album.taille, tags: await getNomTags(album.tags), tagsID: album.tags})
+                aVerifier.push({id: album._id, nom: album.name, taille: album.taille, tags: await getNomTags(album.tags), tagsID: album.tags})
             }
         }
         if (unicite) {
@@ -160,7 +160,7 @@ exports.parse8muses = async (req, res) => {
         for (const album of listeMedias) {
             if (titre === album.name) {
                 unicite = false
-                aVerifier.push({nom: album.name, taille: album.taille})
+                aVerifier.push({id: album._id, nom: album.name, taille: album.taille})
             }
         }
         if (unicite) {
