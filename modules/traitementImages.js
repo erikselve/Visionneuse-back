@@ -7,7 +7,8 @@ async function sauvegarde(fichier) {
     try {
         const nouveauNom = await genereNom(fichier.file.originalname, PATH_IMAGE)
         fs.renameSync(PATH_PUBLIC+'/temp/'+fichier.file.originalname, PATH_IMAGE+nouveauNom)
-        const imRecue = new mediaBDD({name: nouveauNom, nomFichier: nouveauNom, taille: fichier.taille, hash: fichier.hash, type: 'image', nbUtilisation: -1, tags: fichier.tags, favori: false, source: fichier.source})
+        const imRecue = new mediaBDD({name: nouveauNom, nomFichier: nouveauNom, taille: fichier.taille, hash: fichier.hash, type: 'image',
+            nbUtilisation: -1, tags: fichier.tags, favori: false, source: fichier.source, favori: (fichier.favori === true), notes: fichier.notes})
         await imRecue.save()
         console.log('nouvelle image créée: '+nouveauNom);
     }

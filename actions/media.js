@@ -122,6 +122,10 @@ exports.retireDouble = async (req, res) => {
         console.log('Requête reçue: suppression de médias suite au traitement de : '+mediaRecu.file.originalname);
         if (!req.body.mediaBase) {
             mediaRecu.tags = req.body.tags
+            mediaRecu.favori = req.body.favori 
+            mediaRecu.notes = req.body.notes
+            if (req.body.source !== null)
+                mediaRecu.source = req.body.source
             if (req.body.typeMedia === 'video')
                 sauvegardeVideo(mediaRecu)
             else if (req.body.typeMedia === 'album')

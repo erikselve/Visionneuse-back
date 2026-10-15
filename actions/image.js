@@ -20,14 +20,16 @@ exports.upload = async (req, res) => {
         const hashActuel = await calculeHash(req.file.buffer)
         const imageTemp = ((format !== 'gif') && (format !== 'webp'))?await sharp(req.file.buffer).toFile(CHEMIN_TEMP_UPLOAD+req.file.originalname):await sharp(req.file.buffer, {animated: true}).gif({loop: 0}).toFile(CHEMIN_TEMP_UPLOAD+req.file.originalname)
         const metadata = await sharp(CHEMIN_TEMP_UPLOAD+req.file.originalname).metadata()
-        enregistre({file: req.file, hash: hashActuel, taille: {width: metadata.width, height: metadata.height, source: req.body.source}})
+        enregistre({file: req.file, hash: hashActuel, taille: {width: metadata.width, height: metadata.height}, source: req.body.source})
         let unicite = true
         let aVerifier = []
-        const listeMedias = await mediaBDD.find({type: 'image'}).select('name nomFichier taille tags hash')
+        const listeMedias = await mediaBDD.find({type: 'image'}).select('name nomFichier taille tags hash favori notes source')
         for (const image of listeMedias) {
             if (image.hash !== undefined && hashIdentiques(hashActuel, image.hash)) {
                 unicite = false
-                aVerifier.push({id: image._id, nom: image.name, nomFichier: image.nomFichier, taille: image.taille, tags: await getNomTags(image.tags), tagsID: image.tags})
+                aVerifier.push({id: image._id, nom: image.name, nomFichier: image.nomFichier, taille: image.taille,
+                    tags: await getNomTags(image.tags), tagsID: image.tags,
+                    favori: image.favori, notes: image.notes, source: image.source})
             }
         }
         if (unicite) {

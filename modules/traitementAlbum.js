@@ -33,7 +33,9 @@ async function sauvegarde(fichier) {
             fs.rmdirSync(PATH_PUBLIC+'/temp/'+fichier.nom+'/'+rep)
         }
         fs.rmdirSync(PATH_PUBLIC+'/temp/'+fichier.nom)
-        const albumRecu = new mediaBDD({name: nouveauNom, nomFichier: nouveauNom, taille: {width: couverture.width, height: couverture.height, tomes: fichier.taille}, tags: fichier.tags, type: 'album', nbUtilisation: -1, favori: false, source: fichier.source})
+        const albumRecu = new mediaBDD({name: nouveauNom, nomFichier: nouveauNom, taille: {width: couverture.width, height: couverture.height, 
+            tomes: fichier.taille}, tags: fichier.tags, type: 'album', nbUtilisation: -1, favori: false, source: fichier.source, 
+            favori: (fichier.favori === true), notes: fichier.notes})
         await albumRecu.save()
         console.log('nouvel albul créé: '+nouveauNom);
     }
