@@ -9,11 +9,13 @@ const { sauvegardeVideo, supprimeVideo } = require('../modules/traitementVideo.j
 const { sauvegardeAlbum, supprimeAlbum } = require('../modules/traitementAlbum.js')
 const fs = require('fs');
 const {DUREE_MARQUE_MODIF, CHEMIN_TEMP_UPLOAD, DUREE_MARQUE_AJOUT} = require('../data/config.js')
+const melange = require('../modules/melange.js')
 
 exports.filtreMedias = async (req, res) => {
     try{
         let tri = {}
         if (req.body.tri === 'name') tri = {name: 1}
+        else if (req.body.tri === 'arrivee') tri = {_id: 1}
         let typeSelec = []
         if (req.body.typeFiltres.image) typeSelec = [...typeSelec, 'image']
         if (req.body.typeFiltres.album) typeSelec = [...typeSelec, 'album']
@@ -68,7 +70,9 @@ exports.filtreMedias = async (req, res) => {
             default:
                 return res.status(400).json({message: 'filtre de sélection de médias non reconnu'})
         }
-        const listeMedias = await mediaBDD.find(condition).sort(tri)
+        let listeMedias = await mediaBDD.find(condition).sort(tri)
+        if (req.body.tri === 'aleatoire')
+            listeMedias = melange(listeMedias, req.body.graine ?? 'defaut')        
         const max = listeMedias.length
         const pageMedias = listeMedias.filter((elt, index) => index >= req.body.nbImages*req.body.page && index < req.body.nbImages*(req.body.page+1))
         const result = pageMedias.map((elt) => {
