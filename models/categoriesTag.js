@@ -11,8 +11,8 @@ const Schema = mongoose.Schema;
 
 const categorieSchema = new Schema({
   nom: String,
-  nombre: Number
-  // listeTags: [String],
+  nombre: Number,
+  ordre: Number // position d'affichage de la catégorie (tri du front)
 });
 
 // Export Model

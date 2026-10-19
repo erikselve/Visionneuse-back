@@ -9,7 +9,7 @@ function formatString(mot) {
 }
 
 async function formateListe() {
-    const listeCat = await categorieBDD.find()
+    const listeCat = await categorieBDD.find().sort({ordre: 1, _id: 1})
     const listeTag = await tagBDD.find().sort({nomFormate: 1})
     const liensParNom = {}
     listeTag.forEach(tag => {
@@ -77,7 +77,8 @@ exports.creeCategorie = async (req, res) => {
         const nom = assainir.texteStocke(req.body.nom)   // ou req.body.media selon l'action
         if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
         console.log('requête reçue: ajouter la catégorie de tags '+nom);
-        const categorie = new categorieBDD({nom: nom, nombre: 0})
+        const derniere = await categorieBDD.findOne({}, {}, {sort: {ordre: -1}})
+        const categorie = new categorieBDD({nom: nom, nombre: 0, ordre: (derniere?.ordre ?? -1) + 1})
         await categorie.save()
         res.status(200).json({message: 'Catégorie ajoutée'})
     }
@@ -173,6 +174,27 @@ exports.enleveLien = async (req, res) => {
         if (source === null || cible === null) return res.status(400).json({message: 'Tag inconnu'})
         source.liens = source.liens.filter(id => id !== cible._id.toHexString())
         source.save()
+        res.status(200).json({res: await formateListe()})
+    }
+    catch(error) {
+        console.log(error);
+        res.status(400).json({message: 'Impossible à effectuer'})
+    }
+}
+
+exports.deplaceCategorie = async (req, res) => {
+    try {
+        console.log('Requête reçue: déplacer la catégorie '+req.body.categorie+' de '+req.body.direction);
+        const listeCat = await categorieBDD.find().sort({ordre: 1, _id: 1})
+        const index = listeCat.findIndex(elt => elt.nom === req.body.categorie)
+        const cible = index + req.body.direction
+        if (index === -1 || cible < 0 || cible >= listeCat.length)
+            return res.status(400).json({message: 'Déplacement impossible'})
+        const tampon = listeCat[index].ordre
+        listeCat[index].ordre = listeCat[cible].ordre
+        listeCat[cible].ordre = tampon
+        await listeCat[index].save()
+        await listeCat[cible].save()
         res.status(200).json({res: await formateListe()})
     }
     catch(error) {
