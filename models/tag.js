@@ -13,7 +13,8 @@ const tagSchema = new Schema({
   nom: String,
   nomFormate: String,
   categorie: String,
-  nombre: Number
+  nombre: Number,
+  liens: {type: [String], default: []}
 });
 
 // Export Model

@@ -8,16 +8,35 @@ function formatString(mot) {
     return mot.toLocaleLowerCase().replaceAll('œ', 'oe').replaceAll('æ', 'ae').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
+async function formateListe() {
+    const listeCat = await categorieBDD.find()
+    const listeTag = await tagBDD.find().sort({nomFormate: 1})
+    const liensParNom = {}
+    listeTag.forEach(tag => {
+        if (tag.liens.length > 0)
+            liensParNom[tag.nom] = tag.liens.map(id => listeTag.find(t => t._id.toHexString() === id)?.nom).filter(nom => nom !== undefined)
+    })
+    return listeCat.map(elt => ({categorie: elt.nom, liste: listeTag.filter(t => t.categorie === elt._id.toHexString()).map(e => e.nom), liens: liensParNom}))
+}
+
+
 //fonctions exportées
 exports.getCategories = async (req, res) => {
     try{
         console.log('requêtes reçue: envoi de la liste des tags existants');
         const listeCat = await categorieBDD.find()
         const listeTag = await tagBDD.find().sort({nomFormate: 1})
-        const result = listeCat.map((elt) => {
-            return {categorie: elt.nom, liste: listeTag.filter(tag => tag.categorie === elt._id.toHexString()).map(element => element.nom)}
+        const liensParNom = {}
+        listeTag.forEach(tag => {
+            if (tag.liens.length > 0)
+                liensParNom[tag.nom] = tag.liens
+                    .map(id => listeTag.find(t => t._id.toHexString() === id)?.nom)
+                    .filter(nom => nom !== undefined)
         })
-        res.status(200).json({res: result})
+        const result = listeCat.map((elt) => {
+            return {categorie: elt.nom, liste: listeTag.filter(tag => tag.categorie === elt._id.toHexString()).map(element => element.nom), liens: liensParNom}
+        })
+        res.status(200).json({res: await formateListe()})
     }
     catch(error) {
         console.log(error);
@@ -110,7 +129,7 @@ exports.renomme = async (req, res) => {
         const result = listeCat.map((elt) => {
             return {categorie: elt.nom, liste: listeTag.filter(tag => tag.categorie === elt._id.toHexString()).map(element => element.nom)}
         })
-        res.status(200).json({message: 'tag renommé', res: result})                
+        res.status(200).json({message: 'tag renommé', res: await formateListe()})
     } catch (error) {
         console.log(error);
         res.status(400).json({message: 'Impossible à effectuer'})       
@@ -134,7 +153,7 @@ exports.changeCategorie = async (req, res) => {
         const result = listeCat.map((elt) => {
             return {categorie: elt.nom, liste: listeTag.filter(tag => tag.categorie === elt._id.toHexString()).map(element => element.nom)}
         })
-        res.status(200).json({message: 'tag déplacé', res: result})
+        res.status(200).json({message: 'tag déplacé', res: await formateListe()})
     }
     catch(error) {
         console.log(error);
@@ -142,45 +161,24 @@ exports.changeCategorie = async (req, res) => {
     }
 }
 
+exports.ajouteLien = async (req, res) => {
+    // req.body.source, req.body.cible : noms des tags
+    console.log('Requête reçue: lier le tag '+assainir.texteStocke(req.body.source)+' avec le tag '+assainir.texteStocke(req.body.cible));
+    const source = await tagBDD.findOne({nom: assainir.texteStocke(req.body.source)})
+    const cible = await tagBDD.findOne({nom: assainir.texteStocke(req.body.cible)})
+    if (source === null || cible === null) return res.status(400).json({message: 'Tag inconnu'})
+    if (source._id.toHexString() === cible._id.toHexString()) return res.status(400).json({message: 'Un tag ne peut se lier à lui-même'})
+    if (!source.liens.includes(cible._id.toHexString())) source.liens.push(cible._id.toHexString())
+    source.save()
+    res.status(200).json({res: await formateListe()})
+}
 
-// exports.tri = async (req, res) => {
-//     try {
-//         console.log('Requête reçue: trier les tags de la catégorie '+req.body.categorie);
-//         let categorie = await categorieBDD.findOne({nom: req.body.categorie})
-//         let tags = await tagBDD.find()
-//         let nbPassage = 0
-//         let tri =true
-//         while (tri && nbPassage*2 < categorie.listeTags.length) {
-//             tri = false
-//             for (let index = nbPassage; index < categorie.listeTags.length-nbPassage-1; index++) {
-//                 const motDebut = formatString(tags.find(tag => tag._id.toHexString() === categorie.listeTags[index]).nom)
-//                 const motSuiv = formatString(tags.find(tag => tag._id.toHexString() === categorie.listeTags[index+1]).nom)                
-//                 const motFin = formatString(tags.find(tag => tag._id.toHexString() === categorie.listeTags[categorie.listeTags.length-nbPassage-1-index]).nom)
-//                 const motPrec = formatString(tags.find(tag => tag._id.toHexString() === categorie.listeTags[categorie.listeTags.length-nbPassage-2-index]).nom)                
-//                 if ( motDebut > motSuiv) {                   
-//                     tri = true
-//                     const temp = categorie.listeTags[index]
-//                     categorie.listeTags[index] = categorie.listeTags[index+1]
-//                     categorie.listeTags[index+1] = temp
-//                 }
-//                 if (motFin < motPrec) {
-//                     tri = true
-//                     const temp = categorie.listeTags[categorie.listeTags.length-nbPassage-1-index]
-//                     categorie.listeTags[categorie.listeTags.length-nbPassage-1-index] = categorie.listeTags[categorie.listeTags.length-nbPassage-2-index]
-//                     categorie.listeTags[categorie.listeTags.length-nbPassage-2-index] = temp
-//                 }         
-//             }
-//             nbPassage++
-//         }
-//         await categorie.save()
-//         listeCat = await categorieBDD.find()
-//         const result = listeCat.map((elt) => {
-//             return {categorie: elt.nom, liste: elt.listeTags.map(element => tags.find(tag => tag._id.toHexString() === element).nom)}
-//         })
-//         console.log('tri terminé');
-//         res.status(200).json({message: 'tri effectué', res: result})        
-//     } catch (error) {
-//         console.log(error);
-//         res.status(400).json({message: 'Impossible à effectuer'})        
-//     }
-// }
+exports.enleveLien = async (req, res) => {
+    console.log('Requête reçue: délier le tag '+assainir.texteStocke(req.body.source)+' du tag '+assainir.texteStocke(req.body.cible));
+    const source = await tagBDD.findOne({nom: assainir.texteStocke(req.body.source)})
+    const cible = await tagBDD.findOne({nom: assainir.texteStocke(req.body.cible)})
+    if (source === null || cible === null) return res.status(400).json({message: 'Tag inconnu'})
+    source.liens = source.liens.filter(id => id !== cible._id.toHexString())
+    source.save()
+    res.status(200).json({res: await formateListe()})
+}

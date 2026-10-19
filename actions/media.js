@@ -11,6 +11,19 @@ const fs = require('fs');
 const {DUREE_MARQUE_MODIF, CHEMIN_TEMP_UPLOAD, DUREE_MARQUE_AJOUT} = require('../data/config.js')
 const melange = require('../modules/melange.js')
 
+//fermeture transitive des liens d'un tag (IDs hex), garde anti-cycle par le Set des visités
+function collecteLiens(tagDepart, index) {
+    const aAjouter = new Set()
+    const pile = [tagDepart._id.toHexString()]
+    while (pile.length > 0) {
+        const id = pile.pop()
+        for (const idLie of (index.get(id)?.liens ?? [])) {
+            if (idLie !== tagDepart._id.toHexString() && !aAjouter.has(idLie)) { aAjouter.add(idLie); pile.push(idLie) }
+        }
+    }
+    return [...aAjouter]
+}
+
 exports.filtreMedias = async (req, res) => {
     try{
         let tri = {}
@@ -183,6 +196,14 @@ exports.ajouteTag = async (req, res) => {
         console.log('Requête reçue: associer le tag '+req.body.tag+' au média '+media.name);
         const tag = await incrementeTag(req.body.tag)
         media.tags = [...media.tags, tag]
+        // propagation : la fermeture transitive du tag reçu, sauf ce qui est déjà posé
+        const tous = await tagBDD.find()
+        const index = new Map(tous.map(t => [t._id.toHexString(), t]))
+        for (const idLie of collecteLiens(index.get(tag), index)) {
+            if (media.tags.includes(idLie)) continue        // déjà posé : pas de doublon, pas d'incrément fantôme
+            const idPose = await incrementeTag(index.get(idLie).nom)   // chaque entraîné compte comme un ajout réel
+            media.tags = [...media.tags, idPose]
+        }
         media.derniereModif = new Date()
         await media.save()
         res.status(200).json({message: 'tags modifiés'})
