@@ -6,11 +6,12 @@ const {getNomTags} = require('./tag.js')
 const {sauvegarde, supprime} = require('../modules/traitementImages.js')
 const {CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
 const {calculeHash, hashIdentiques} = require('../modules/hashImage.js')
+const { extension } = require('../modules/genereNom.js')
 
 exports.upload = async (req, res) => {
     try {
         if (req.file.originalname.length > 150) { 
-            req.file.originalname = req.file.originalname.slice(0, 150)+req.file.originalname.split('.')[1]
+            req.file.originalname = req.file.originalname.slice(0, 150)+extension(req.file.originalname)
         }
         if (assainir.fragChemin(req.file.originalname) === null) {
             return res.status(400).json({message: 'Nom de fichier invalide'})

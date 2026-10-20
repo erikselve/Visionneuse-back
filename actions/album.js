@@ -9,6 +9,7 @@ const sharp = require('sharp')
 const {getNomTags} = require('./tag.js')
 const { sauvegardeAlbum, supprimeAlbum, formatNomChiffre} = require('../modules/traitementAlbum.js')
 const {CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
+const { extension } = require('../modules/genereNom.js')
 
 exports.getAlbum = async (req, res) => {
     try {
@@ -144,7 +145,7 @@ exports.parse8muses = async (req, res) => {
                         if (elt.parentNode.rawAttrs === 'class="image"') {
                             const recup = elt.rawAttrs.split('"')[3].split('/')
                             nomImage = recup[recup.length-1]
-                            await recupereImage(url+'/image/fl/'+nomImage, destination+'/'+repTome+'/'+formatNomChiffre(''+numPage)+'.'+nomImage.split('.')[1])
+                            await recupereImage(url+'/image/fl/'+nomImage, destination+'/'+repTome+'/'+formatNomChiffre(''+numPage)+'.'+extension(nomImage))
                             numPage++
                         }            
                     }

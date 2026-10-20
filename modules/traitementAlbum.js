@@ -3,7 +3,8 @@ const fs = require('fs');
 const mediaBDD = require('../models/media.js');
 const sharp = require('sharp');
 const {PATH_ALBUM, CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
-const genereNom = require('./genereNom.js')
+const {genereNom, sansExtension} = require('./genereNom.js')
+const {genereMiniature} = require('./genereMiniature.js')
 
 //change un nombre dans un string 'x' en '0000x' sur 5 caractères (il ne faut pas de nombre de plus de 5 caractères)
 function formatNomFichier(nombre) {
@@ -33,7 +34,7 @@ async function sauvegarde(fichier) {
             fs.rmdirSync(CHEMIN_TEMP_UPLOAD+fichier.nom+'/'+rep)
         }
         fs.rmdirSync(CHEMIN_TEMP_UPLOAD+fichier.nom)
-        await genereMiniature(PATH_ALBUM+nouveauNom+'/00001/00001.jpg', PATH_ALBUM+'couvertures/'+nouveauNom.split('.')[0]+'.webp')
+        await genereMiniature(PATH_ALBUM+nouveauNom+'/00001/00001.jpg', PATH_ALBUM+'couvertures/'+sansExtension(nouveauNom)+'.webp')
         const albumRecu = new mediaBDD({name: nouveauNom, nomFichier: nouveauNom, taille: {width: couverture.width, height: couverture.height, 
             tomes: fichier.taille}, tags: fichier.tags, type: 'album', nbUtilisation: -1, favori: false, source: fichier.source, 
             favori: (fichier.favori === true), notes: fichier.notes})
@@ -47,7 +48,7 @@ async function sauvegarde(fichier) {
 
 async function supprime(fichier, id) {
     fs.rmSync(PATH_ALBUM+fichier, {recursive: true, force: true})
-    fs.unlinkSync(PATH_ALBUM+'couvertures/'+fichier.split('.')[0]+'.webp')
+    fs.unlinkSync(PATH_ALBUM+'couvertures/'+sansExtension(fichier)+'.webp')
     await mediaBDD.deleteOne({_id: id})
 }
 
