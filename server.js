@@ -21,7 +21,8 @@ const tagRoutes = require('./routes/tag.js')
 const imageRoutes = require('./routes/image.js')
 const videoRoutes = require('./routes/video.js')
 const userRoutes = require('./routes/user.js')
-const sourceRoutes = require('./routes/source.js');
+const sourceRoutes = require('./routes/source.js')
+const statsRoutes = require('./routes/stats.js')
 
 // définition du serveur
 var app = express();
@@ -42,6 +43,7 @@ app.use('/image', imageRoutes)
 app.use('/video', videoRoutes)
 app.use('/user', userRoutes)
 app.use('/source', sourceRoutes)
+app.use('/stats', statsRoutes)
 
 app.get('/test', async (req, res) => {
     console.log('Requête reçue: test')
