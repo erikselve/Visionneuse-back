@@ -193,11 +193,12 @@ exports.ajouteTag = async (req, res) => {
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
-        if (media.tags.includes(tag)) {
-            return {dejaPresent: true}   // skip silencieux, pas d'erreur : ce n'est pas un échec
-        }
+
         console.log('Requête reçue: associer le tag '+req.body.tag+' au média '+media.name);
         const tag = await incrementeTag(req.body.tag)
+        if (media.tags.includes(tag)) {
+            return res.status(200).json({dejaPresent: true, message: 'Tag déjà présent'});
+        }
         media.tags = [...media.tags, tag]
         // propagation : la fermeture transitive du tag reçu, sauf ce qui est déjà posé
         const tous = await tagBDD.find()
