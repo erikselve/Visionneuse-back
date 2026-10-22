@@ -54,6 +54,8 @@ exports.getTagID = async (nom) => {
 
 exports.incrementeTag =async (nom) => {
     const tag = await tagBDD.findOne({nom: nom})
+    if (tag === null)
+        throw new Error('Tag inexistant : ' + nom)
     tag.nombre = tag.nombre + 1
     tag.save()
     const categorie = await categorieBDD.findById(tag.categorie)
@@ -64,6 +66,8 @@ exports.incrementeTag =async (nom) => {
 
 exports.decrementeTag =async (nom) => {
     const tag = await tagBDD.findOne({nom: nom})
+    if (tag === null)
+        throw new Error('Tag inexistant : ' + nom)
     tag.nombre = tag.nombre - 1
     tag.save()
     const categorie = await categorieBDD.findById(tag.categorie)
