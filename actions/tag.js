@@ -78,7 +78,7 @@ exports.decrementeTag =async (nom) => {
 
 exports.creeCategorie = async (req, res) => {
     try{
-        const nom = assainir.texteStocke(req.body.nom)   // ou req.body.media selon l'action
+        const nom = assainir.texte(req.body.nom)   // ou req.body.media selon l'action
         if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
         console.log('requête reçue: ajouter la catégorie de tags '+nom);
         const derniere = await categorieBDD.findOne({}, {}, {sort: {ordre: -1}})
@@ -94,7 +94,7 @@ exports.creeCategorie = async (req, res) => {
 
 exports.ajoute = async (req, res) => {
     try{
-        const nom = assainir.texteStocke(req.body.nom)   // ou req.body.media selon l'action
+        const nom = assainir.texte(req.body.nom)   // ou req.body.media selon l'action
         if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
         console.log('requête reçue: ajouter le tag '+nom+' à la catégorie '+req.body.categorie);
         const test = await tagBDD.findOne({nom: nom})
@@ -118,10 +118,14 @@ exports.ajoute = async (req, res) => {
 
 exports.renomme = async (req, res) => {
     try {
-        const nom = assainir.texte(req.body.nouvTag)   // ou req.body.media selon l'action
+        const nom = assainir.texte(req.body.nouvTag)
         if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
         console.log('Requête reçue: modifier le tag '+req.body.tag+' par '+nom);
         const tag = await tagBDD.findOne({nom: req.body.tag})
+        if (tag === null) return res.status(400).json({message: 'Tag inconnu'})
+        const test = await tagBDD.findOne({nom: nom})
+        if (test !== null && test._id.toHexString() !== tag._id.toHexString())
+            return res.status(409).json({message: 'Ce nom est déjà pris'})
         tag.nom = nom
         tag.nomFormate = formatString(nom)
         await tag.save()
@@ -134,14 +138,20 @@ exports.renomme = async (req, res) => {
 
 exports.changeCategorie = async (req, res) => {
     try{
-        console.log('Requête reçue: déplacer le tag '+req.body.tag+' de la catégorie '+req.body.categorieInit+' vers la catégorie '+req.body.categorieCible);
-        const nouvelleCat = await categorieBDD.findOne({nom: req.body.categorieCible})
-        const tag = await tagBDD.findOne({nom: req.body.tag})
+        const nomtag = assainir.texte(req.body.tag)
+        if (nomtag === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        const categorieInit = assainir.texte(req.body.categorieInit)
+        if (categorieInit === null) return res.status(400).json({message: 'Nom de catégorie invalide'})
+        const categorieCible = assainir.texte(req.body.categorieCible)
+        if (categorieCible === null) return res.status(400).json({message: 'Nom de catégorie invalide'})
+        console.log('Requête reçue: déplacer le tag '+nomtag+' de la catégorie '+categorieInit+' vers la catégorie '+categorieCible);
+        const nouvelleCat = await categorieBDD.findOne({nom: categorieCible})
+        const tag = await tagBDD.findOne({nom: nomtag})
         tag.categorie = nouvelleCat._id.toHexString()
         await tag.save()
         nouvelleCat.nombre = nouvelleCat.nombre + tag.nombre
         await nouvelleCat.save()
-        const ancienneCat = await categorieBDD.findOne({nom: req.body.categorieInit})
+        const ancienneCat = await categorieBDD.findOne({nom: categorieInit})
         ancienneCat.nombre = ancienneCat.nombre - tag.nombre
         await ancienneCat.save()
         res.status(200).json({message: 'tag déplacé', res: await formateListe()})
@@ -155,9 +165,9 @@ exports.changeCategorie = async (req, res) => {
 exports.ajouteLien = async (req, res) => {
         // req.body.source, req.body.cible : noms des tags
     try {
-        console.log('Requête reçue: lier le tag '+assainir.texteStocke(req.body.source)+' avec le tag '+assainir.texteStocke(req.body.cible));
-        const source = await tagBDD.findOne({nom: assainir.texteStocke(req.body.source)})
-        const cible = await tagBDD.findOne({nom: assainir.texteStocke(req.body.cible)})
+        console.log('Requête reçue: lier le tag '+assainir.texte(req.body.source)+' avec le tag '+assainir.texte(req.body.cible));
+        const source = await tagBDD.findOne({nom: assainir.texte(req.body.source)})
+        const cible = await tagBDD.findOne({nom: assainir.texte(req.body.cible)})
         if (source === null || cible === null) return res.status(400).json({message: 'Tag inconnu'})
         if (source._id.toHexString() === cible._id.toHexString()) return res.status(400).json({message: 'Un tag ne peut se lier à lui-même'})
         if (!source.liens.includes(cible._id.toHexString())) source.liens.push(cible._id.toHexString())
@@ -172,9 +182,9 @@ exports.ajouteLien = async (req, res) => {
 
 exports.enleveLien = async (req, res) => {
     try {
-        console.log('Requête reçue: délier le tag '+assainir.texteStocke(req.body.source)+' du tag '+assainir.texteStocke(req.body.cible));
-        const source = await tagBDD.findOne({nom: assainir.texteStocke(req.body.source)})
-        const cible = await tagBDD.findOne({nom: assainir.texteStocke(req.body.cible)})
+        console.log('Requête reçue: délier le tag '+assainir.texte(req.body.source)+' du tag '+assainir.texte(req.body.cible));
+        const source = await tagBDD.findOne({nom: assainir.texte(req.body.source)})
+        const cible = await tagBDD.findOne({nom: assainir.texte(req.body.cible)})
         if (source === null || cible === null) return res.status(400).json({message: 'Tag inconnu'})
         source.liens = source.liens.filter(id => id !== cible._id.toHexString())
         source.save()
@@ -188,9 +198,13 @@ exports.enleveLien = async (req, res) => {
 
 exports.deplaceCategorie = async (req, res) => {
     try {
-        console.log('Requête reçue: déplacer la catégorie '+req.body.categorie+' de '+req.body.direction);
+        const categorie = assainir.texte(req.body.categorie)
+        if (categorie === null) return res.status(400).json({message: 'Nom de catégorie invalide'})
+        const direction = Number(req.body.direction)
+        if (isNaN(direction)) return res.status(400).json({message: 'Mauvaise direction de déplacement'})
+        console.log('Requête reçue: déplacer la catégorie '+categorie+' de '+req.body.direction);
         const listeCat = await categorieBDD.find().sort({ordre: 1, _id: 1})
-        const index = listeCat.findIndex(elt => elt.nom === req.body.categorie)
+        const index = listeCat.findIndex(elt => elt.nom === categorie)
         const cible = index + req.body.direction
         if (index === -1 || cible < 0 || cible >= listeCat.length)
             return res.status(400).json({message: 'Déplacement impossible'})
