@@ -202,10 +202,10 @@ exports.deplaceCategorie = async (req, res) => {
         if (categorie === null) return res.status(400).json({message: 'Nom de catégorie invalide'})
         const direction = Number(req.body.direction)
         if (isNaN(direction)) return res.status(400).json({message: 'Mauvaise direction de déplacement'})
-        console.log('Requête reçue: déplacer la catégorie '+categorie+' de '+req.body.direction);
+        console.log('Requête reçue: déplacer la catégorie '+categorie+' de '+direction);
         const listeCat = await categorieBDD.find().sort({ordre: 1, _id: 1})
         const index = listeCat.findIndex(elt => elt.nom === categorie)
-        const cible = index + req.body.direction
+        const cible = index + direction
         if (index === -1 || cible < 0 || cible >= listeCat.length)
             return res.status(400).json({message: 'Déplacement impossible'})
         const tampon = listeCat[index].ordre
