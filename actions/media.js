@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const mediaBDD = require('../models/media.js')
+const sourceBDD = require('../models/source.js')
 const assainir = require('../modules/assainissement.js')
 const { consomme } = require('../modules/mediaEnAttente.js')
 const tagBDD = require('../models/tag.js')
@@ -264,9 +265,15 @@ exports.changeSource = async (req, res) => {
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
-        console.log('Requête reçue: associer la source '+req.body.source+' au média '+media.name);
+        const nomSource = assainir.texte(req.body.source)
+        if (nomSource === null) return res.status(400).json({message: 'Nom de source invalide'})
+        if (nomSource !== 'Inconnu') {
+            const source = await sourceBDD.findOne({nom: nomSource})
+            if (source === null) return res.status(400).json({message: 'Source inconnue : ' + nomSource})
+        }
+        console.log('Requête reçue: associer la source '+nomSource+' au média '+media.name);
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
-        media.source = (req.body.source === 'Inconnu') ? null : req.body.source
+        media.source = (nomSource === 'Inconnu') ? null : nomSource
         media.derniereModif = new Date()
         await media.save()
         res.status(200).json({message: 'source modifiée'})

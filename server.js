@@ -7,10 +7,6 @@ const fs = require('fs')
 
 //datas
 
-const mediaBDD = require('./models/media.js')
-const tagBDD = require('./models/tag.js')
-const categorieBDD = require('./models/categoriesTag.js')
-const sourceBDD = require('./models/source.js')
 const {PATH_PUBLIC} = require('./data/config.js')
 
 //modules
@@ -47,7 +43,29 @@ app.use('/stats', statsRoutes)
 
 app.get('/test', async (req, res) => {
     console.log('Requête reçue: test')
-    // const media = require('./models/media.js')
+    const {sansExtension} = require('./modules/genereNom.js')
+    const {PATH_ALBUM, PATH_IMAGE, PATH_VIDEO} = require('./data/config.js')
+    const mediaBDD = require('./models/media.js')
+    const medias = await mediaBDD.find()
+    medias.forEach(media => {
+        const division = media.nomFichier.split('.')
+        if (division.length > 2) {
+            let path = null
+            switch(media.type) {
+                case 'video':
+                    path = PATH_VIDEO+'couvertures/'
+                    break
+                case 'image':
+                    path = PATH_IMAGE+'miniatures/'
+                    break
+                case 'album':
+                    path = PATH_ALBUM+'couvertures/'
+                    break
+            }
+            if (!fs.existsSync(path+sansExtension(media.nomFichier)+'.webp'))
+                fs.renameSync(path+division[0]+'.webp',path+sansExtension(media.nomFichier)+'.webp')
+        }
+    })
     // const ffmpeg = require('ffmpeg')
 
     // const video = await new ffmpeg('./public/videos/81-1713713828315-2B Woods (1080) [NO WM].mp4')
