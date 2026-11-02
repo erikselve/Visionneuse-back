@@ -171,13 +171,19 @@ exports.retireDouble = async (req, res) => {
 
 exports.retireTag = async (req, res) => {
     try{
+        const nomTag = assainir.texte(req.body.tag)
+        if (nomTag === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        const tag = await tagBDD.findOne({nom: nomTag})
+        if (tag === null) return res.status(400).json({message: 'Tag inexistant : ' + nomTag})
+        const idTag = tag._id.toHexString()
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const media = await mediaBDD.findById(id)
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
+        if (!media.tags.includes(idTag)) return res.status(400).json({message: 'Tag non posé sur ce média'})
+        const tagRetire = await decrementeTag(nomTag)
+        media.tags = media.tags.filter(elt => elt !== tagRetire)
         console.log('Requête reçue: retirer le tag '+req.body.tag+' associé au média '+media.name);
-        const tag = await decrementeTag(req.body.tag)
-        media.tags = media.tags.filter(elt => elt !== tag)
         media.derniereModif = new Date()
         await media.save()
         res.status(200).json({message: 'tags modifiés'})

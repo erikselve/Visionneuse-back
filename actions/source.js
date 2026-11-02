@@ -117,7 +117,7 @@ exports.ajouteSourceManuelle = async (req, res) => {
             await existant.save()
         }
         formatAllSources(false).then((rep) => {
-            res.status(200).json({liste: rep, auteur: nom})
+            res.status(200).json({liste: rep, auteur: nom, cree: (existant === null)?true:false})
         })
     } catch (error) {
         console.log(error);
