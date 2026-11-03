@@ -16,7 +16,9 @@ async function formateListe() {
         if (tag.liens.length > 0)
             liensParNom[tag.nom] = tag.liens.map(id => listeTag.find(t => t._id.toHexString() === id)?.nom).filter(nom => nom !== undefined)
     })
-    return listeCat.map(elt => ({categorie: elt.nom, liste: listeTag.filter(t => t.categorie === elt._id.toHexString()).map(e => e.nom), liens: liensParNom}))
+    const motsClesParNom = {}
+    listeTag.forEach(tag => { if (tag.motsCles.length > 0) motsClesParNom[tag.nom] = tag.motsCles })
+    return listeCat.map(elt => ({categorie: elt.nom, liste: listeTag.filter(t => t.categorie === elt._id.toHexString()).map(e => e.nom), liens: liensParNom, motsCles: motsClesParNom}))
 }
 
 
@@ -194,6 +196,36 @@ exports.enleveLien = async (req, res) => {
         console.log(error);
         res.status(400).json({message: 'Impossible à effectuer'})
     }
+}
+
+exports.ajouteMotCle = async (req, res) => {
+    try {
+        const nomTag = assainir.texte(req.body.tag)
+        const motCle = assainir.texte(req.body.motCle)
+        if (nomTag === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        if (motCle === null) return res.status(400).json({message: 'Mot-clé invalide'})
+        const tag = await tagBDD.findOne({nom: nomTag})
+        if (tag === null) return res.status(400).json({message: 'Tag inconnu'})
+        console.log('Requête reçue: ajouter le mot-clé '+motCle+' au tag '+nomTag);
+        if (!tag.motsCles.includes(motCle)) tag.motsCles.push(motCle)
+        await tag.save()
+        res.status(200).json({res: await formateListe()})
+    } catch (error) { console.log(error); res.status(400).json({message: 'Impossible à effectuer'}) }
+}
+
+exports.enleveMotCle = async (req, res) => {
+    try {
+        const nomTag = assainir.texte(req.body.tag)
+        const motCle = assainir.texte(req.body.motCle)
+        if (nomTag === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        if (motCle === null) return res.status(400).json({message: 'Mot-clé invalide'})
+        const tag = await tagBDD.findOne({nom: nomTag})
+        if (tag === null) return res.status(400).json({message: 'Tag inconnu'})
+        console.log('Requête reçue: ajouter le mot-clé '+motCle+' au tag '+nomTag);
+        if (!tag.motsCles.filter(motCle)) tag.motsCles.push(motCle)
+        await tag.save()
+        res.status(200).json({res: await formateListe()})
+    } catch (error) { console.log(error); res.status(400).json({message: 'Impossible à effectuer'}) }
 }
 
 exports.deplaceCategorie = async (req, res) => {

@@ -14,6 +14,7 @@ const tagSchema = new Schema({
   nomFormate: String,
   categorie: String,
   nombre: Number,
+  motsCles: {type: [String], default: []},
   liens: {type: [String], default: []}
 });
 

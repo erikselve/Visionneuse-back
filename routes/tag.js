@@ -11,5 +11,7 @@ router.put('/rename', tagActions.renomme)
 router.put('/move', tagActions.changeCategorie)
 router.post('/lien', tagActions.ajouteLien)
 router.delete('/lien', tagActions.enleveLien)
+router.post('/motcle', tagActions.ajouteMotCle)
+router.delete('/motcle', tagActions.enleveMotCle)
 
 module.exports = router;
