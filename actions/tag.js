@@ -18,7 +18,7 @@ async function formateListe() {
     })
     const motsClesParNom = {}
     listeTag.forEach(tag => { if (tag.motsCles.length > 0) motsClesParNom[tag.nom] = tag.motsCles })
-    return listeCat.map(elt => ({categorie: elt.nom, liste: listeTag.filter(t => t.categorie === elt._id.toHexString()).map(e => e.nom), liens: liensParNom, motsCles: motsClesParNom}))
+    return {categories: listeCat.map(elt => ({categorie: elt.nom, liste: listeTag.filter(t => t.categorie === elt._id.toHexString()).map(e => e.nom)})), liens: liensParNom, motsCles: motsClesParNom}
 }
 
 
@@ -221,8 +221,8 @@ exports.enleveMotCle = async (req, res) => {
         if (motCle === null) return res.status(400).json({message: 'Mot-clé invalide'})
         const tag = await tagBDD.findOne({nom: nomTag})
         if (tag === null) return res.status(400).json({message: 'Tag inconnu'})
-        console.log('Requête reçue: ajouter le mot-clé '+motCle+' au tag '+nomTag);
-        if (!tag.motsCles.filter(motCle)) tag.motsCles.push(motCle)
+        console.log('Requête reçue: enlever le mot-clé '+motCle+' au tag '+nomTag);
+        if (tag.motsCles.includes(motCle)) tag.motsCles = tag.motsCles.filter(elt => elt !== motCle)
         await tag.save()
         res.status(200).json({res: await formateListe()})
     } catch (error) { console.log(error); res.status(400).json({message: 'Impossible à effectuer'}) }
