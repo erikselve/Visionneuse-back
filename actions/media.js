@@ -307,3 +307,24 @@ exports.changeNotes = async (req, res) => {
         res.status(400).json({message: 'Impossible à effectuer'})
     }
 }
+
+exports.chercheNom = async (req, res) => {
+    try {
+        const nom = assainir.texte(req.body.nom)
+        if (nom === null) return res.status(400).json({message: 'Nom invalide'})
+        console.log('Requête reçue: chercher le média '+nom);
+        // 1. exact : le nom tel quel, ET sa variante espaces→underscores (nomFichier est formaté par le back à l'upload)
+        const nomUS = nom.replaceAll(' ', '_')
+        let medias = await mediaBDD.find({$or: [{nomFichier: nom}, {nomFichier: nomUS}, {name: nom}]}).limit(5)
+        // 2. partiel : une espace dans la requête matche une espace OU un underscore dans la base
+        if (medias.length === 0) {
+            const esc = nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            const regex = new RegExp(esc.replace(/ /g, '[\\s_]'), 'i')
+            medias = await mediaBDD.find({$or: [{nomFichier: regex}, {name: regex}]}).limit(10)
+        }
+        res.status(200).json({res: medias.map(m => ({id: m._id.toHexString(), name: m.name, nomFichier: m.nomFichier, type: m.type}))})
+    } catch (error) {
+        console.log(error)
+        res.status(400).json({message: 'Recherche impossible'})
+    }
+}

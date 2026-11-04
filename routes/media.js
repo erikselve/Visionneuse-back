@@ -14,5 +14,6 @@ router.post('/favori', mediaActions.getMediaFavoriAleatoire)
 router.post('/favori/court', mediaActions.getMediaFavoriCourtAleatoire)
 router.put('/source', mediaActions.changeSource)
 router.put('/notes', mediaActions.changeNotes)
+router.post('/cherche', mediaActions.chercheNom)
 
 module.exports = router;
