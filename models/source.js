@@ -10,7 +10,9 @@ mongoose.connect('mongodb://'+URL_BDD+NOM_BASE);
 const Schema = mongoose.Schema;
 
 const source = new Schema({
-  nom: String,
+  nom: String,                                      // clé canonique, figée à la création, jamais affichée
+  nomUsage: String,                                 // nom d'affichage (créé = nom, diverge ensuite via GestionSources)
+  alias: {type: [String], default: []},              // autres noms de l'auteur, pour la reconnaissance (F95, saisie)
   origines: [{nom: String, derniereRecup: Date}],
   derniereConsult: Date,
   graphisme: Number,
