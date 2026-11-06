@@ -10,5 +10,6 @@ router.get('/notation', sourceActions.getNotation)
 router.put('/note', sourceActions.setNote)
 router.patch('/consulte', sourceActions.consulte)
 router.put('/rename', sourceActions.renomme)
+router.put('/alias', sourceActions.ajouteAlias)
 
 module.exports = router;
