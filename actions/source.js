@@ -99,12 +99,14 @@ exports.ajouteSourceF95 = async (req, res) => {
 
 exports.ajouteSourceManuelle = async (req, res) => {
     try {
-        console.log('Requête reçue: ajout manuel de la source '+req.body.nom);
-        const nom = assainir.texteStocke(req.body.nom)
+        const nom = assainir.texteStocke(req.body.nom)   // pour nom
+        const nomAffiche = assainir.texte(req.body.nom)          // pour nomUsage et alias
         if (nom === null) return res.status(400).json({message: 'Nom de source invalide'})
-        let existant = await sourceBDD.findOne({nom: nom})
+        console.log('Requête reçue: ajout manuel de la source '+nom);
+        // correspondance sur les trois identifiants : canonique, usage, alias
+        const existant = await sourceBDD.findOne({$or: [{nom: nom}, {nomUsage: nomAffiche}, {alias: nomAffiche}]})
         if (existant === null) {
-            const source = new sourceBDD({nom: nom, origines: [{nom: 'manuel', derniereRecup: new Date()}], derniereConsult: new Date(), graphisme: 0, miseEnScene: 0, animation: 0, son: 0})
+            const source = new sourceBDD({nom: nom, nomUsage: nomAffiche, origines: [{nom: 'manuel', derniereRecup: new Date()}], derniereConsult: new Date(), graphisme: 0, miseEnScene: 0, animation: 0, son: 0})
             await source.save()
         }
         else {
@@ -117,7 +119,15 @@ exports.ajouteSourceManuelle = async (req, res) => {
             await existant.save()
         }
         formatAllSources(false).then((rep) => {
-            res.status(200).json({liste: rep, auteur: nom, cree: (existant === null)?true:false})
+            res.status(200).json({
+                liste: rep,
+                auteur: (existant === null)?nom:existant.nom,   // clé canonique, jamais la chaîne tapée
+                cree: (existant === null),
+                ...(existant === null)?{}:{
+                    matchSur: (existant.nom === nom)?'nom':(existant.nomUsage === nom)?'nomUsage':'alias',
+                    existant: {nom: existant.nom, nomUsage: existant.nomUsage}
+                }
+            })
         })
     } catch (error) {
         console.log(error);
