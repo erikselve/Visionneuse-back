@@ -124,7 +124,7 @@ exports.ajouteSourceManuelle = async (req, res) => {
                 auteur: (existant === null)?nom:existant.nom,   // clé canonique, jamais la chaîne tapée
                 cree: (existant === null),
                 ...(existant === null)?{}:{
-                    matchSur: (existant.nom === nom)?'nom':(existant.nomUsage === nom)?'nomUsage':'alias',
+                    matchSur: (existant.nom === nom)?'nom':(existant.nomUsage === nomAffiche)?'nomUsage':'alias',
                     existant: {nom: existant.nom, nomUsage: existant.nomUsage}
                 }
             })
@@ -149,7 +149,9 @@ exports.getNotation = async (req, res) => {
 
 exports.setNote = async (req, res) => {
     console.log('Requête reçue: changement de la note d\'une source');
-    let source = await sourceBDD.findOne({nom: req.body.auteur})
+    const auteur = assainir.texte(req.body.auteur)
+    if (auteur === null) return res.status(400).json({message: 'Nom de source invalide'})
+    let source = await sourceBDD.findOne({nom: auteur})
 
     switch (req.body.type) {
         case 'graphisme':
@@ -167,8 +169,6 @@ exports.setNote = async (req, res) => {
     }
 
     await source.save()
-    // const sources = await sourceBDD.find()
-    // res.status(200).json({liste: sources})
     formatAllSources(false).then((rep) => {
         res.status(200).json({liste: rep})
     })
@@ -187,27 +187,49 @@ exports.consulte = async (req, res) => {
 
 exports.renomme = async (req, res) => {
     try {
-        console.log('Requête reçue: renommer la source '+req.body.ancienNom+' en '+req.body.nouvNom);
-        const ancienNom = assainir.texte(req.body.ancienNom)
-        const nouvNom = assainir.texteStocke(req.body.nouvNom)
+        console.log('Requête reçue: renommer la source '+req.body.ancienNom+' (usage) en '+req.body.nouvNom);
+        const ancienNom = assainir.texte(req.body.ancienNom)      // clé canonique relayée par le front : telle quelle
+        const nouvNom = assainir.texte(req.body.nouvNom)          // saisie fraîche : forme affichage
         if (ancienNom === null || nouvNom === null)
             return res.status(400).json({message: 'Nom de source invalide'})
-        const existant = await sourceBDD.findOne({nom: nouvNom})
-        if (existant !== null && existant.nom !== ancienNom)
-            return res.status(409).json({message: 'Une source porte déjà ce nom'})
+        const doublon = await sourceBDD.findOne({nomUsage: nouvNom, nom: {$ne: ancienNom}})
+        if (doublon !== null)
+            return res.status(409).json({message: 'Une source affiche déjà ce nom d\'usage'})
         const source = await sourceBDD.findOne({nom: ancienNom})
         if (source === null)
             return res.status(404).json({message: 'Source introuvable'})
-        source.nom = nouvNom
+        source.nomUsage = nouvNom
         await source.save()
-        // le garde-fou lui-même : propagation aux médias qui référencent la source
-        const maj = await mediaBDD.updateMany({source: ancienNom}, {source: nouvNom})
-        console.log('Renommage propagé à '+maj.modifiedCount+' médias');
+        // le nom canonique ne bouge plus : media.source reste valide, plus de propagation
         formatAllSources(false).then((rep) => {
-            res.status(200).json({liste: rep, auteur: nouvNom})
+            res.status(200).json({liste: rep, auteur: ancienNom})
         })
     } catch (error) {
         console.log(error);
         res.status(400).json({message: 'Impossible de renommer la source'})
+    }
+}
+
+exports.ajouteAlias = async (req, res) => {
+    try {
+        const nom = assainir.texte(req.body.nom)                  // canonique relayé : tel quel
+        const alias = assainir.texte(req.body.alias)              // saisie fraîche : forme alias (texte)
+        const aliasStocke = assainir.texteStocke(req.body.alias)  // la même, en forme clé pour comparer à nom
+        if (nom === null || alias === null) return res.status(400).json({message: 'Alias invalide'})
+        const pris = await sourceBDD.findOne({$or: [
+            {nom: aliasStocke}, {nomUsage: alias}, {alias: alias}
+        ]})
+        if (pris !== null)
+            return res.status(409).json({message: 'Ce nom est déjà utilisé par une autre source'})
+        const source = await sourceBDD.findOne({nom: nom})
+        if (source === null) return res.status(404).json({message: 'Source introuvable'})
+        source.alias = [...source.alias, alias]
+        await source.save()
+        formatAllSources(false).then((rep) => {
+            res.status(200).json({liste: rep})
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({message: 'Impossible d\'ajouter l\'alias'})
     }
 }
