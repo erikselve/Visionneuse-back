@@ -61,40 +61,97 @@ async function formatAllSources(avecNotes = true) {
 }
 
 exports.ajouteSourceF95 = async (req, res) => {
-    console.log('Requête reçue: ajout/maj d\'une source vidéo');
+    try {
+        console.log('Requête reçue: ajout/maj d\'une source F95');
+        // 1. extraction : /threads/<principal>-collection-<date>-<alias>.<id thread>
+        const url = assainir.texte(req.body.url)
+        if (url === null) return res.status(400).json({message: 'URL invalide'})
+        const m = url.match(/\/threads\/(.+?)-collection-(\d{4}-\d{2}-\d{2})(?:-(.+))?\.(\d+)\/?$/)
+        if (m === null) return res.status(400).json({message: 'URL de thread F95 non reconnue'})
+        const principalAffiche = assainir.texte(m[1])
+        const principalStocke = assainir.texteStocke(m[1])
+        const date = new Date(m[2])
+        // les alias : tokens après la date, dédoublonnés, assainis — le principal y figure souvent (F95 le répète)
+        const collectes = [...new Set((m[3] ?? '').split('-').map(t => assainir.texte(t)).filter(t => t !== null))]
+        
+        // 2. correspondance : nom strict d'abord ; sinon les alias, sur les trois identifiants
+        let source = await sourceBDD.findOne({nom: principalStocke})
+        let matchSur = 'nom'
+        if (source === null) {
+            const touchees = await sourceBDD.find({$or: [
+                {nom: {$in: collectes.map(t => assainir.texteStocke(t))}},
+                {nomUsage: {$in: collectes}},
+                {alias: {$in: collectes}}
+            ]})
+            if (touchees.length > 1) {
+                const noms = touchees.map(s => s.nomUsage).join(', ')
+                console.log('REFUS F95 : les alias touchent plusieurs sources ('+noms+') — fusion à décider manuellement')
+                return res.status(409).json({message: 'Plusieurs sources correspondent à ces alias ('+noms+') — fusion à décider manuellement'})
+            }
+            if (touchees.length === 1) { source = touchees[0]; matchSur = 'alias' }
+        }
 
-    const info = req.body.url.split('/')[4].split('-')
-    let compt = 0
-    let auteur = ''
-    while(info[compt] !== 'collection') {
-        auteur = auteur + info[compt]
-        compt++
-    }
-    const date = new Date(info[compt+1], info[compt+2]-1, info[compt+3])
-    let existant = await sourceBDD.findOne({nom: auteur})
-    if (existant === null) {
-        const source = new sourceBDD({nom: auteur, origines: [{nom: req.params.origine, derniereRecup: date}], derniereConsult: new Date(), graphisme: 0, miseEnScene: 0, animation: 0, son: 0})
-        await source.save()
-    }
-    else {
-        const indexOrigine = existant.origines.findIndex((elt) => elt.nom === req.params.origine)
-        if (indexOrigine === -1) {
-            existant.origines = [...existant.origines, {nom: req.params.origine, derniereRecup: date}]
-            existant.derniereConsult = new Date()
-            await existant.save()
+        if (source === null) {
+            // 3. nouvelle source — le principal est le nom : il ne se répète pas dans ses propres alias
+            const alias = collectes.filter(t => t !== principalAffiche)
+            const nouvelle = new sourceBDD({nom: principalStocke, nomUsage: principalAffiche, alias: alias, origines: [{nom: req.params.origine, derniereRecup: date}], derniereConsult: new Date(), graphisme: 0, miseEnScene: 0, animation: 0, son: 0})
+            await nouvelle.save()
+            console.log('Source créée : '+principalAffiche+' ('+alias.length+' alias)')
+            formatAllSources(false).then((rep) => {
+                res.status(200).json({liste: rep, auteur: principalStocke, cree: true})
+            })
         }
         else {
-            if (existant.origines[indexOrigine].derniereRecup < date) {
-                existant.origines[indexOrigine].derniereRecup = date
-                existant.derniereConsult = new Date()
-                await existant.save()
+            // 4. source connue : origine mise à jour (seulement si plus récente), puis alias manquants
+            const indexOrigine = source.origines.findIndex((elt) => elt.nom === req.params.origine)
+            if (indexOrigine === -1) {
+                source.origines = [...source.origines, {nom: req.params.origine, derniereRecup: date}]
+                source.derniereConsult = new Date()
             }
+            else if (source.origines[indexOrigine].derniereRecup < date) {
+                source.origines[indexOrigine].derniereRecup = date
+                source.derniereConsult = new Date()
+            }
+            // source trouvée par alias avec usage encore par défaut : le principal F95 devient l'affichage
+            // (l'usage n'a jamais divergé = aucune décision humaine à respecter)
+            if (matchSur === 'alias' && assainir.texteStocke(source.nomUsage) === source.nom) {
+                source.nomUsage = principalAffiche
+                console.log('Nom d\'usage mis à jour (encore par défaut) : '+principalAffiche)
+            }
+            // les alias appartenant à une autre source ne se volent pas : ignorés et signalés
+            const pris = await sourceBDD.find({_id: {$ne: source._id}, $or: [
+                {nom: {$in: collectes.map(t => assainir.texteStocke(t))}},
+                {nomUsage: {$in: collectes}},
+                {alias: {$in: collectes}}
+            ]})
+            const interdits = new Set()
+            pris.forEach(s => {
+                s.alias.forEach(a => { if (collectes.includes(a)) interdits.add(a) })
+                if (collectes.includes(s.nomUsage)) interdits.add(s.nomUsage)
+                collectes.forEach(t => { if (assainir.texteStocke(t) === s.nom) interdits.add(t) })
+            })
+            // ajout = un token qui n'est NI l'identité propre de la source (nom, usage, alias existants),
+            // NI la propriété d'une autre source
+            const ajoutables = collectes.filter(t =>
+                assainir.texteStocke(t) !== source.nom &&
+                t !== source.nomUsage &&
+                !source.alias.includes(t) &&
+                !interdits.has(t)
+            )
+            if (ajoutables.length > 0) {
+                source.alias = [...source.alias, ...ajoutables]
+                console.log('Alias ajoutés à '+source.nomUsage+' : '+ajoutables.join(', '))
+            }
+            interdits.forEach(t => console.log('Alias ignoré (appartient à une autre source) : '+t))
+            await source.save()
+            formatAllSources(false).then((rep) => {
+                res.status(200).json({liste: rep, auteur: source.nom, cree: false, matchSur: matchSur, aliasAjoutes: ajoutables})
+            })
         }
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({message: 'Impossible d\'ajouter la source F95'})
     }
-
-    formatAllSources(false).then((rep) => {
-        res.status(200).json({liste: rep, auteur: auteur})
-    })
 }
 
 exports.ajouteSourceManuelle = async (req, res) => {
