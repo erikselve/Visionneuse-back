@@ -73,7 +73,7 @@ exports.ajouteSourceF95 = async (req, res) => {
         const date = new Date(m[2])
         // les alias : tokens après la date, dédoublonnés, assainis — le principal y figure souvent (F95 le répète)
         const collectes = [...new Set((m[3] ?? '').split('-').map(t => assainir.texte(t)).filter(t => t !== null))]
-        
+
         // 2. correspondance : nom strict d'abord ; sinon les alias, sur les trois identifiants
         let source = await sourceBDD.findOne({nom: principalStocke})
         let matchSur = 'nom'

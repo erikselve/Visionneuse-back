@@ -274,15 +274,21 @@ exports.changeSource = async (req, res) => {
         const nomSource = assainir.texte(req.body.source)
         if (nomSource === null) return res.status(400).json({message: 'Nom de source invalide'})
         if (nomSource !== 'Inconnu') {
-            const source = await sourceBDD.findOne({nom: nomSource})
+            const source = await sourceBDD.findOne({$or: [
+                {nom: nomSource},                          // canonique relayé par le front : tel quel
+                {nom: assainir.texteStocke(nomSource)},    // saisie fraîche avec caractère spécial : forme clé
+                {nomUsage: nomSource},                     // le nom que l'utilisateur emploie
+                {alias: nomSource}                         // un autre nom de l'auteur
+            ]})
             if (source === null) return res.status(400).json({message: 'Source inconnue : ' + nomSource})
+            media.source = source.nom                      // toujours le canonique, jamais la chaîne reçue
         }
         console.log('Requête reçue: associer la source '+nomSource+' au média '+media.name);
         if (media === null) return res.status(400).json({message: 'Média introuvable'})
         media.source = (nomSource === 'Inconnu') ? null : nomSource
         media.derniereModif = new Date()
         await media.save()
-        res.status(200).json({message: 'source modifiée'})
+        res.status(200).json({message: 'source modifiée', nomUsage: (nomSource === 'Inconnu')?null:source.nomUsage})
     }
     catch(error) {
         console.log(error);
