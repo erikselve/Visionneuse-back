@@ -4,6 +4,7 @@ const {PATH_VIDEO, CHEMIN_TEMP_TRAVAIL, CHEMIN_TEMP_UPLOAD} = require('../data/c
 const {genereNom, sansExtension} = require('./genereNom.js')
 const {genereClip} = require('./extractionFrames.js')
 const {genereMiniature} = require('./genereMiniature.js')
+const { decrementeTagsMedia } = require('../actions/tag.js')
 
 async function sauvegarde(fichier) {
     try {
@@ -31,7 +32,8 @@ async function supprime(fichier, id) {
     fs.unlinkSync(PATH_VIDEO+fichier)
     fs.unlinkSync(PATH_VIDEO+'couvertures/'+sansExtension(fichier)+'.webp')
     fs.unlinkSync(PATH_VIDEO+'couvertures/clip_'+sansExtension(fichier)+'.mp4')
-    await mediaBDD.deleteOne({_id: id})
+    const media = await mediaBDD.findOneAndDelete({_id: id})   // récupère le document en le supprimant
+    if (media !== null) await decrementeTagsMedia(media)       // il emporte ses tags, pas leurs points
 }
 
 module.exports = {

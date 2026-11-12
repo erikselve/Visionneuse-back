@@ -78,6 +78,15 @@ exports.decrementeTag =async (nom) => {
     return tag._id.toHexString()
 }
 
+// le média emporte ses tags, mais pas leurs points : à appeler au moment où l'on supprime le document
+exports.decrementeTagsMedia = async (media) => {
+    for (const idTag of media.tags) {
+        const tag = await tagBDD.findById(idTag)
+        if (tag === null) continue   // id fantôme : rien à décrémenter, l'audit s'en occupe
+        await decrementeTag(tag.nom)   // la voie canonique : tag et catégorie ensemble
+    }
+}
+
 exports.creeCategorie = async (req, res) => {
     try{
         const nom = assainir.texte(req.body.nom)   // ou req.body.media selon l'action

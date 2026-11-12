@@ -5,6 +5,7 @@ const sharp = require('sharp');
 const {PATH_ALBUM, CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
 const {genereNom, sansExtension} = require('./genereNom.js')
 const {genereMiniature} = require('./genereMiniature.js')
+const { decrementeTagsMedia } = require('../actions/tag.js')
 
 //change un nombre dans un string 'x' en '0000x' sur 5 caractères (il ne faut pas de nombre de plus de 5 caractères)
 function formatNomFichier(nombre) {
@@ -49,7 +50,8 @@ async function sauvegarde(fichier) {
 async function supprime(fichier, id) {
     fs.rmSync(PATH_ALBUM+fichier, {recursive: true, force: true})
     fs.unlinkSync(PATH_ALBUM+'couvertures/'+sansExtension(fichier)+'.webp')
-    await mediaBDD.deleteOne({_id: id})
+    const media = await mediaBDD.findOneAndDelete({_id: id})   // récupère le document en le supprimant
+    if (media !== null) await decrementeTagsMedia(media)       // il emporte ses tags, pas leurs points
 }
 
 module.exports = {

@@ -3,6 +3,7 @@ const mediaBDD = require('../models/media.js')
 const {PATH_IMAGE, CHEMIN_TEMP_UPLOAD} = require('../data/config.js')
 const { genereNom, sansExtension} = require('./genereNom.js')
 const {genereMiniature} = require('./genereMiniature.js')
+const { decrementeTagsMedia } = require('../actions/tag.js')
 
 async function sauvegarde(fichier) {
     try {
@@ -23,7 +24,8 @@ async function supprime(fichier, id) {
     fs.copyFileSync(PATH_IMAGE+fichier, './poubelle/'+fichier)
     fs.unlinkSync(PATH_IMAGE+fichier)
     fs.unlinkSync(PATH_IMAGE+'miniatures/'+sansExtension(fichier)+'.webp')
-    await mediaBDD.deleteOne({_id: id})
+    const media = await mediaBDD.findOneAndDelete({_id: id})   // récupère le document en le supprimant
+    if (media !== null) await decrementeTagsMedia(media)       // il emporte ses tags, pas leurs points
 }
 
 module.exports = {
