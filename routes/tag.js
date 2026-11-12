@@ -13,5 +13,6 @@ router.post('/lien', tagActions.ajouteLien)
 router.delete('/lien', tagActions.enleveLien)
 router.post('/motcle', tagActions.ajouteMotCle)
 router.delete('/motcle', tagActions.enleveMotCle)
+router.delete('/tag', tagActions.supprimeTag)
 
 module.exports = router;

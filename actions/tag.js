@@ -1,6 +1,6 @@
 const tagBDD = require('../models/tag.js')
 const categorieBDD = require('../models/categoriesTag.js')
-const tag = require('../models/tag.js')
+const mediaBDD = require('../models/media.js')
 const assainir = require('../modules/assainissement.js')
 
 //fonctions locales
@@ -135,6 +135,36 @@ exports.renomme = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.status(400).json({message: 'Impossible à effectuer'})       
+    }
+}
+
+exports.supprimeTag = async (req, res) => {
+    try {
+        const nom = assainir.texte(req.body.tag)
+        if (nom === null) return res.status(400).json({message: 'Nom de tag invalide'})
+        const force = (req.body.force === true)
+        const tag = await tagBDD.findOne({nom: nom})
+        if (tag === null) return res.status(400).json({message: 'Tag inconnu'})
+        const idTag = tag._id.toHexString()
+        const mediasTouches = await mediaBDD.countDocuments({tags: idTag})
+        if (mediasTouches > 0 && !force)
+            // pas une erreur : un diagnostic que le front transforme en dialogue de confirmation
+            return res.status(200).json({supprime: false, nombre: mediasTouches, res: await formateListe()})
+        console.log('Requête reçue: supprimer le tag '+nom+((mediasTouches > 0)?' (retiré de '+mediasTouches+' médias)':''));
+        if (mediasTouches > 0)
+            await mediaBDD.updateMany({tags: idTag}, {$pull: {tags: idTag}, $set: {derniereModif: new Date()}})
+        await tagBDD.updateMany({liens: idTag}, {$pull: {liens: idTag}})   // personne ne pointe vers un mort
+        const categorie = await categorieBDD.findById(tag.categorie)
+        if (categorie !== null) {
+            categorie.nombre = Math.max(0, categorie.nombre - tag.nombre)   // la catégorie rend son compteur
+            await categorie.save()
+        }
+        await tagBDD.deleteOne({_id: tag._id})
+        res.status(200).json({supprime: true, nombre: mediasTouches, res: await formateListe()})
+    }
+    catch(error) {
+        console.log(error);
+        res.status(400).json({message: 'Impossible à effectuer'})
     }
 }
 
