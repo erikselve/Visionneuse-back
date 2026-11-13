@@ -8,8 +8,8 @@ const {LARGEUR_MINIATURE, QUALITE_MINIATURE} = require('../data/config.js')
 async function genereMiniature(cheminSource, cheminDestination) {
     fs.mkdirSync(require('path').dirname(cheminDestination), {recursive: true})
     const tampon = fs.readFileSync(cheminSource)
-    const sortie = await sharp(tampon).resize(LARGEUR_MINIATURE, null, {fit: 'inside', withoutEnlargement: true})
-        .webp({quality: QUALITE_MINIATURE}).toBuffer()
+    const sortie = await sharp(tampon, {animated: true}).resize(LARGEUR_MINIATURE, null, {fit: 'inside', withoutEnlargement: true})
+            .webp({quality: QUALITE_MINIATURE}).toBuffer()
     fs.writeFileSync(cheminDestination, sortie)
 }
 
