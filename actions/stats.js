@@ -23,8 +23,8 @@ exports.getStats = async (req, res) => {
         const listeTag = await tagBDD.find()
         const tags = listeCat.map(cat => {
             const tagsCat = listeTag.filter(t => t.categorie === cat._id.toHexString())
-                .map(t => ({nom: t.nom, nombre: t.nombre}))
-                .sort((a, b) => b.nombre - a.nombre)
+                .map(t => ({nom: t.nom, nomFormate: t.nomFormate, nombre: t.nombre}))
+                .sort((a, b) => b.nombre - a.nombre)   // tri par poids conservé : le top 15 en dépend
             return {categorie: cat.nom, nbTags: tagsCat.length,
                 somme: tagsCat.reduce((s, t) => s + t.nombre, 0), tags: tagsCat}
         })
