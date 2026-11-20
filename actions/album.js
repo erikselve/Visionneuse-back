@@ -16,7 +16,7 @@ exports.getAlbum = async (req, res) => {
         const id = assainir.id(req.body.id)
         if (id === null) return res.status(400).json({message: 'Identifiant de média invalide'})
         const album = await mediaBDD.findById(id)
-        if (media === null) return res.status(400).json({message: 'Média introuvable'})
+        if (album === null) return res.status(400).json({message: 'Média introuvable'})
         console.log('Requête reçue: envoi du contenu de l\'album '+album.name);
         res.status(200).json({res: album.taille.tomes})
     } catch (error) {
@@ -77,6 +77,7 @@ exports.supprime = async (req, res) => {
     supprimeAlbum(media.nomFichier, media._id).then(() => res.status(200).json({message: 'Fichier supprimé'}))
 }
 
+//inutilisé, laissé ici à titre d'archive en cas de réactivation un jour
 exports.parseErofus = (req, res) => {
     console.log('*** Parsage d\'un album du site erofus.com demandé');
     const url = 'https://www.erofus.com'
@@ -109,6 +110,7 @@ exports.parseErofus = (req, res) => {
     })
 }
 
+//inutilisé, laissé ici à titre d'archive en cas de réactivation un jour
 exports.parse8muses = async (req, res) => {
     try {
         console.log('*** Parsage d\'un album du site 8muses demandé');
@@ -144,7 +146,7 @@ exports.parse8muses = async (req, res) => {
                         const elt = listeImg[index];
                         if (elt.parentNode.rawAttrs === 'class="image"') {
                             const recup = elt.rawAttrs.split('"')[3].split('/')
-                            nomImage = recup[recup.length-1]
+                            const nomImage = recup[recup.length-1]
                             await recupereImage(url+'/image/fl/'+nomImage, destination+'/'+repTome+'/'+formatNomChiffre(''+numPage)+'.'+extension(nomImage))
                             numPage++
                         }            
@@ -154,7 +156,7 @@ exports.parse8muses = async (req, res) => {
                 }
             }
         }
-        rengistre({nom: titre, taille: tailleTome})
+        enregistre({nom: titre, taille: tailleTome})
         let unicite = true
         let aVerifier = []
         const listeMedias = await mediaBDD.find({type: 'album'})
