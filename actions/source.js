@@ -9,8 +9,8 @@ async function formatAllSources(avecNotes = true) {
     const SEUIL_INACTIVITE = 365.25 * 24 * 3600 * 1000   // 1 an sans récupération → probablement inactive
     const sources = await sourceBDD.find().sort({derniereConsult: 1})
     const dureeConsultMax = Date.now() - Date.parse(sources[0].derniereConsult)
-    // cumul des notes de médias par source et par critère — uniquement si demandé :
-    // ce scan lit tous les médias notés, il est réservé aux routes où les notes changent
+    // cumul des notes de médias par source et par critère — uniquement si demandé 
+    // (ajout: pour que l'affichage des notes et évaluation soit honnète il faut le faire à chaque fois)
     const critères = ['graphisme', 'animation', 'miseEnScene', 'son']
     let cumuls = {}
     if (avecNotes) {
@@ -97,7 +97,7 @@ exports.ajouteSourceF95 = async (req, res) => {
             const nouvelle = new sourceBDD({nom: principalStocke, nomUsage: principalAffiche, alias: alias, origines: [{nom: req.params.origine, derniereRecup: date}], derniereConsult: new Date(), graphisme: 0, miseEnScene: 0, animation: 0, son: 0})
             await nouvelle.save()
             console.log('Source créée : '+principalAffiche+' ('+alias.length+' alias)')
-            formatAllSources(false).then((rep) => {
+            formatAllSources().then((rep) => {
                 res.status(200).json({liste: rep, auteur: principalStocke, cree: true})
             })
         }
@@ -144,7 +144,7 @@ exports.ajouteSourceF95 = async (req, res) => {
             }
             interdits.forEach(t => console.log('Alias ignoré (appartient à une autre source) : '+t))
             await source.save()
-            formatAllSources(false).then((rep) => {
+            formatAllSources().then((rep) => {
                 res.status(200).json({liste: rep, auteur: source.nom, cree: false, matchSur: matchSur, aliasAjoutes: ajoutables})
             })
         }
@@ -175,7 +175,7 @@ exports.ajouteSourceManuelle = async (req, res) => {
             existant.derniereConsult = new Date()
             await existant.save()
         }
-        formatAllSources(false).then((rep) => {
+        formatAllSources().then((rep) => {
             res.status(200).json({
                 liste: rep,
                 auteur: (existant === null)?nom:existant.nom,   // clé canonique, jamais la chaîne tapée
@@ -226,7 +226,7 @@ exports.setNote = async (req, res) => {
     }
 
     await source.save()
-    formatAllSources(false).then((rep) => {
+    formatAllSources().then((rep) => {
         res.status(200).json({liste: rep})
     })
 }
@@ -237,7 +237,7 @@ exports.consulte = async (req, res) => {
 
     source.derniereConsult = new Date()
     await source.save()
-    formatAllSources(false).then((rep) => {
+    formatAllSources().then((rep) => {
         res.status(200).json({liste: rep})
     })    
 }
@@ -258,7 +258,7 @@ exports.renomme = async (req, res) => {
         source.nomUsage = nouvNom
         await source.save()
         // le nom canonique ne bouge plus : media.source reste valide, plus de propagation
-        formatAllSources(false).then((rep) => {
+        formatAllSources().then((rep) => {
             res.status(200).json({liste: rep, auteur: ancienNom})
         })
     } catch (error) {
@@ -282,7 +282,7 @@ exports.ajouteAlias = async (req, res) => {
         if (source === null) return res.status(404).json({message: 'Source introuvable'})
         source.alias = [...source.alias, alias]
         await source.save()
-        formatAllSources(false).then((rep) => {
+        formatAllSources().then((rep) => {
             res.status(200).json({liste: rep})
         })
     } catch (error) {

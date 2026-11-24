@@ -1,6 +1,68 @@
 # AGENTS.md — Visionneuse-back
 
-## Doctrine générale
+Ce fichier encode la façon de travailler d'Erik : socle commun à tous ses
+projets, suivi des spécificités du back Visionneuse. Le but n'est pas que
+l'agent aille vite, mais qu'Erik garde en permanence la compréhension et la
+maîtrise de son projet. Chaque session doit laisser le projet dans un état
+compris, testé et committable.
+
+## Mode de réponse (socle commun)
+
+- Choisir le mode selon la nature de la tâche, pas toujours le mode rapide.
+  - Mode rapide : fonctionnalités simples, UI, corrections au diagnostic clair.
+  - Mode réfléchi (obligatoire) : nouvelle formule de calcul, manipulation de
+    dates/durées, toute action qui touche au disque ou à la base avec des
+    entrées utilisateur, décisions d'architecture (identifiants, invariants,
+    place d'une règle front/back).
+- Quand le mode réfléchi est adopté par défaut, l'indiquer par une ligne
+  d'en-tête au début de la réponse.
+- Raison d'être : la majorité des bugs historiques venaient de raisonnements
+  longs menés en mode rapide.
+
+## Protocole de travail (socle commun, toute demande)
+
+Chaque demande suit quatre phases. Aucune n'est sautée, même en mode rapide
+(seules l'amplitude des explications et la profondeur du plan changent).
+
+1. **Analyse** : relire le code réel concerné, reformuler la demande en une
+   phrase pour vérifier la compréhension, identifier les points de travail
+   et les contraintes. Si la demande est ambiguë ou incomplète, poser la
+   question AVANT de proposer quoi que ce soit, plutôt que de choisir en
+   silence.
+2. **Proposition** : présenter la solution adoptée — ce qui va être modifié,
+   dans quels fichiers, pourquoi cette solution (et, quand c'est tranchant,
+   l'alternative écartée en une ligne et la raison). Pas de fichier modifié à
+   cette étape : l'objectif est qu'Erik ait conscience des modifications
+   prévues et puisse réagir.
+3. **Validation** : attendre un accord explicite (ex. « vas-y », « validé »).
+   Une remarque ou une correction relance la phase 2 : re-proposer, ne pas
+   appliquer en même temps qu'on répond à l'objection. En cas de doute sur
+   l'accord, demander au lieu d'interpréter.
+4. **Application puis restitution** : appliquer le validé, un point de travail
+   à la fois (si plusieurs points indépendants, les traiter un par un, sauf
+   lien réel entre eux — pas de gros diff groupé). Diff par fichier, expliqué :
+   indiquer le numéro de la première ligne concernée (repris dans le fichier
+   réel relu au moment de l'application, pas une version antérieure ; pour du
+   code entièrement nouveau, la ligne d'insertion). Insérer les tests au
+   moment du déroulé où ils ont du sens, pas tous regroupés à la fin si un
+   état intermédiaire mérite d'être vérifié avant l'étape suivante. Terminer
+   par un résumé des changements et pourquoi, puis proposer un intitulé de
+   commit utilisable tel quel : préfixe en minuscules selon la nature
+   (`fix`, `refactor`, `feat`...), en français, concis et descriptif.
+
+Un seul accord vaut pour la solution proposée, pas pour des extensions que
+l'agent s'accorde à lui-même en cours de route : tout ajout découvert en
+appliquant est signalé et revalidé, pas glissé dans le diff.
+
+## Ce que l'agent ne fait jamais (socle commun)
+
+- Modifier des fichiers sans un diff proposé à la relecture.
+- Enchaîner plusieurs points de travail dans une même réponse sans accord.
+- Exécuter une commande destructive (suppression, migration de base, git push)
+  sans la montrer et obtenir l'accord.
+- Regrouper des décisions d'architecture au fil d'une tâche : les isoler.
+
+## Doctrine générale (projet)
 
 - **Front/back** : les règles métier vivent côté back (back = source de vérité,
   front = présentation). Déployer back d'abord, front ensuite (le back reste
@@ -34,8 +96,6 @@
   frame est décodée.
 - **ffmpeg** : `-y` systématique, noms de fichiers temporaires uniques, stdio
   avec stdin 'ignore' et écouteur 'error' obligatoire.
-- **Commits** : préfixe en minuscules selon la nature (`fix`, `refactor`,
-  `feat`...), en français, concis et descriptif.
 
 ## Sources : trois identifiants, une grammaire
 
