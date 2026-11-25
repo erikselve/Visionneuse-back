@@ -41,9 +41,11 @@ async function sauvegarde(fichier) {
             favori: (fichier.favori === true), notes: fichier.notes})
         await albumRecu.save()
         console.log('nouvel albul créé: '+nouveauNom);
+        return albumRecu   //document créé : son _id permet au front de cibler le nouveau média
     }
     catch(error) {
         console.log(error);
+        return null
     }
 }
 

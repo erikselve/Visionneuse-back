@@ -35,7 +35,8 @@ exports.upload = async (req, res) => {
         }
         if (unicite) {
             const mediaRecu = consomme()
-            sauvegarde(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'})) 
+            //id/name du média créé : le front bascule sur sa vueMédia une fois l'upload résolu (champs ignorés par un ancien front)
+            sauvegarde(mediaRecu).then((media) => res.status(200).json({message: 'Bien reçu', id: (media !== null)?media._id:null, name: (media !== null)?media.name:null})) 
         }
         else res.status(300).json({listeVerif: aVerifier, taille:{width: imageTemp.width, height: imageTemp.height} , message: 'Des images sont peut-être identiques, confirmation nécessaire'})
     }

@@ -21,9 +21,11 @@ async function sauvegarde(fichier) {
         await vidRecue.save()
 
         console.log('nouvelle vidéo créée: '+nouveauNom);
+        return vidRecue   //document créé : son _id permet au front de cibler le nouveau média
     }
     catch(error) {
         console.log(error);
+        return null
     }
 }
 

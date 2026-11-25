@@ -14,9 +14,11 @@ async function sauvegarde(fichier) {
             nbUtilisation: -1, tags: fichier.tags, favori: false, source: fichier.source, favori: (fichier.favori === true), notes: fichier.notes})
         await imRecue.save()
         console.log('nouvelle image créée: '+nouveauNom);
+        return imRecue   //document créé : son _id permet au front de cibler le nouveau média
     }
     catch(error) {
         console.log(error);
+        return null
     }
 }
 

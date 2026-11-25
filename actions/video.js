@@ -48,7 +48,8 @@ exports.upload = async (req, res) => {
         }
         if (unicite) {
             const mediaRecu = consomme()
-            sauvegardeVideo(mediaRecu).then(() => res.status(200).json({message: 'Bien reçu'}))
+            //id/name du média créé : le front bascule sur sa vueMédia une fois l'upload résolu (champs ignorés par un ancien front)
+            sauvegardeVideo(mediaRecu).then((media) => res.status(200).json({message: 'Bien reçu', id: (media !== null)?media._id:null, name: (media !== null)?media.name:null}))
         }
         else {
             for (let i = 1; i <= 3; i++)
@@ -89,7 +90,7 @@ exports.uploadLocal = async (req, res) => {
         couverture = await sharp(CHEMIN_TEMP_TRAVAIL+'/instant_1.jpg').jpeg().toFile((CHEMIN_TEMP_TRAVAIL+'/temp.jpg'))
     for (let i = 1; i <= 3; i++)
         fs.promises.unlink('./temp/instant_' + i + '.jpg').catch(() => {})
-    sauvegardeVideo({file: {originalname: req.body.titre}, hash: hashConcat, taille: {width: couverture.width, height: couverture.height}}).then(() => res.status(200).json({message: 'Bien reçu'}))
+    sauvegardeVideo({file: {originalname: req.body.titre}, hash: hashConcat, taille: {width: couverture.width, height: couverture.height}}).then((media) => res.status(200).json({message: 'Bien reçu', id: (media !== null)?media._id:null, name: (media !== null)?media.name:null}))
 }
 
 exports.supprime = async (req, res) => {

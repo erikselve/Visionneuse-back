@@ -134,6 +134,7 @@ exports.retireDouble = async (req, res) => {
             return res.status(400).json({message: 'Aucun média en attente de confirmation'})
         }
         console.log('Requête reçue: suppression de médias suite au traitement de : '+mediaRecu.file.originalname);
+        let promesseSauvegarde = null
         if (!req.body.mediaBase) {
             mediaRecu.tags = req.body.tags
             mediaRecu.favori = req.body.favori 
@@ -141,11 +142,11 @@ exports.retireDouble = async (req, res) => {
             if (req.body.source !== null)
                 mediaRecu.source = req.body.source
             if (req.body.typeMedia === 'video')
-                sauvegardeVideo(mediaRecu)
+                promesseSauvegarde = sauvegardeVideo(mediaRecu)
             else if (req.body.typeMedia === 'album')
-                sauvegardeAlbum(mediaRecu)
+                promesseSauvegarde = sauvegardeAlbum(mediaRecu)
             else
-                sauvegarde(mediaRecu)
+                promesseSauvegarde = sauvegarde(mediaRecu)
         }
         else fs.promises.unlink(CHEMIN_TEMP_UPLOAD+mediaRecu.file.originalname)
             .catch(() => console.log('Nettoyage: fichier temporaire '+mediaRecu.file.originalname+' pas supprimable (encore ouvert ?) — ignoré'))
@@ -161,7 +162,9 @@ exports.retireDouble = async (req, res) => {
             else
                 supprime(media.nomFichier, media._id)
         }
-        res.status(200).json({message: 'Médias supprimées'})
+        //id/name du média en attente sauvegardé : le front bascule sur sa vueMédia (null si mediaBase : le nouveau média est détruit)
+        const mediaCree = (promesseSauvegarde !== null)?await promesseSauvegarde:null
+        res.status(200).json({message: 'Médias supprimées', id: (mediaCree !== null)?mediaCree._id:null, name: (mediaCree !== null)?mediaCree.name:null})
     }
     catch(err) {
         console.log('Impossible de supprimer des fichiers liés au traitement : '+err);
