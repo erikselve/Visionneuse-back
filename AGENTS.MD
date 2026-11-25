@@ -6,6 +6,12 @@ l'agent aille vite, mais qu'Erik garde en permanence la compréhension et la
 maîtrise de son projet. Chaque session doit laisser le projet dans un état
 compris, testé et committable.
 
+## Localisation des dépôts
+
+- Back (ce dépôt) : `E:\ProjetsDDExt\node\Visionneuse`
+- Front (Visionneuse) : `C:\Erik\Projets\Projets\React\gestion_images`
+- Espace de travail VS Code réunissant les deux : `C:\Erik\Projets\Projets\Agent Visionneuse.code-workspace`
+
 ## Mode de réponse (socle commun)
 
 - Choisir le mode selon la nature de la tâche, pas toujours le mode rapide.
@@ -139,6 +145,16 @@ appliquant est signalé et revalidé, pas glissé dans le diff.
   `{supprime: bool, nombre, res}`) car le front (`fetch_json`) ne rend pas les
   corps d'erreur exploitables. Toute future action à confirmation suit ce
   schéma : la décision humaine se porte sur un 200, pas sur un 4xx.
+- **Une réponse de mutation devient la vérité d'affichage** : le front
+  consomme ces réponses par remplacement (`chargeSources`), sans fusion —
+  peu importe ce que la mutation elle-même a touché, la réponse porte TOUT
+  ce que l'affichage montre (notes calculées, partFavoris, évaluation,
+  urgence : `formatAllSources()` complet, jamais appauvri). Le poison ne
+  vit pas dans la mutation mais dans la réponse : une liste amputée des
+  notes calculées fait afficher la note manuelle brute (un 0, qui se rend
+  comme une étoile pleine). Si le scan coûte un jour, l'optimisation juste
+  est de le cibler ou de fusionner côté front — jamais de rendre la
+  réponse malhonnête pour l'économiser.
 
 ## Points de vigilance
 
